@@ -2649,12 +2649,19 @@ int bio_do_handshake_non_blocking(int sock, BIO *bio, long tv_sec, long tv_usec)
 
 void fini_ssl(struct ssl_param *param)
 {
+//	target_bio_http		:BIO_NOCLOSE
+//	target_bio_socks5	:BIO_CLOSE
+
 	if(param->target_bio_socks5 != NULL){
-		BIO_ssl_shutdown(param->target_bio_http);
-		BIO_free_all(param->target_bio_http);
+		BIO_ssl_shutdown(param->target_bio_socks5);
+		BIO_free_all(param->target_bio_socks5);
 	}else if(param->target_bio_http != NULL){
 		BIO_ssl_shutdown(param->target_bio_http);
-		BIO_free_all(param->target_bio_http);
+		BIO_free(param->target_bio_http);
+	}
+
+	if(param->target_ssl_http != NULL){
+		SSL_free(param->target_ssl_http);
 	}
 
 	if(param->target_ctx_socks5 != NULL){

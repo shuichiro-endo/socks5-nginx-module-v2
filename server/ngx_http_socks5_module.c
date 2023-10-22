@@ -1561,22 +1561,12 @@ error:
 
 void fini_ssl(ngx_http_request_t *r, struct ssl_param *param)
 {
-	long ret_l = 0;
-	SSL *ssl = SSL_new(param->client_ctx_socks5);
+//	client_bio_http		:BIO_NOCLOSE
+//	client_bio_socks5	:BIO_CLOSE
 
-	if(param->client_bio_http != NULL && param->client_bio_socks5 == NULL){
-		ret_l = BIO_set_ssl(param->client_bio_http, ssl, BIO_NOCLOSE);
-		if(ret_l <= 0){
-			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] BIO_set_ssl error");
-		}
-		BIO_free(param->client_bio_http);
-	}else if(param->client_bio_http != NULL && param->client_bio_socks5 != NULL){
-		BIO_free(param->client_bio_socks5);
-
-		ret_l = BIO_set_ssl(param->client_bio_http, ssl, BIO_NOCLOSE);
-		if(ret_l <= 0){
-			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] BIO_set_ssl error");
-		}
+	if(param->client_bio_socks5 != NULL){
+		BIO_free_all(param->client_bio_socks5);
+	}else if(param->client_bio_http != NULL){
 		BIO_free(param->client_bio_http);
 	}
 
