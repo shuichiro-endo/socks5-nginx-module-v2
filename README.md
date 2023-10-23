@@ -12,7 +12,7 @@ sequenceDiagram
     participant A as socks5 client
     participant B as my client
     participant C as nginx server (my socks5 module)
-    participant D as destination server
+    participant D as destination server (web, ssh, tor, etc.)
     loop 
         A->>+B: socks5 selection request (Socks5)
         B->>+C: SSL connect (HTTPS)
@@ -81,8 +81,8 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
 
 #### 2. build and install
 - server
-    1. set up HTTPS on nginx
-    2. get nginx version
+    1. set up HTTPS on the nginx
+    2. get the nginx version
     ```
     /usr/sbin/nginx -v
     ```
@@ -93,13 +93,13 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     tar -xzvf nginx-x.xx.x.tar.gz
     ```
     4. change privatekey and certificate ([How to change socks5 server privatekey and certificate (for Socks5 over TLS)](https://github.com/shuichiro-endo/socks5-nginx-module-v2#how-to-change-socks5-server-privatekey-and-certificate-for-socks5-over-tls))
-    5. build my module(dynamic module)
+    5. build my module (dynamic module)
     ```
     cd nginx-x.xx.x
     ./configure --with-compat --add-dynamic-module=../server --with-ld-opt="-lssl -lcrypto"
     make modules
     ```
-    6. copy the module library(.so file) to nginx modules directory
+    6. copy the module library (.so file) to the nginx modules directory
     ```
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
     ```
@@ -113,20 +113,20 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
 - client
     1. copy ssl/tls server certificate (HTTPS, Socks5 over TLS) to my client directory
     ```
-    cd socks5-nginx-module-v2/client
     cp xxx.crt socks5-nginx-module-v2/client/server_https.crt
     cp yyy.crt socks5-nginx-module-v2/client/server_socks5.crt
     ```
     2. modify client.c file (if you change the certificate filename or directory path)
     ```
     char server_certificate_filename_https[256] = "server_https.crt";	// server certificate filename (HTTPS)
-    char server_certificate_file_directory_path_https[256] = ".";	// server certificate file directory path (HTTPS)
+    char server_certificate_file_directory_path_https[256] = ".";	    // server certificate file directory path (HTTPS)
 
     char server_certificate_filename_socks5[256] = "server_socks5.crt";	// server certificate filename (Socks5 over TLS)
-    char server_certificate_file_directory_path_socks5[256] = ".";	// server certificate file directory path (Socks5 over TLS)
+    char server_certificate_file_directory_path_socks5[256] = ".";	    // server certificate file directory path (Socks5 over TLS)
     ```
     3. build
     ```
+    cd socks5-nginx-module-v2/client
     make
     ```
 
@@ -157,7 +157,9 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j forward_proxy_service_principal_name
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j HTTP/proxy.test.local@TEST.LOCAL -A 10
     ```
-    2. connect to my client from other clients(browser, proxychains, etc.)
+    Note: The forward proxy (2:https) connection function is experimental.
+    
+    2. connect to my client from other clients (browser, proxychains, etc.)
     ```
     proxychains4 curl -v https://www.google.com
     curl -v -x socks5h://127.0.0.1:9050 https://www.google.com
@@ -225,11 +227,11 @@ If there are many connections in CLOSE_WAIT state, you can do the following.
     ./configure --with-compat --add-dynamic-module=../server --with-ld-opt="-lssl -lcrypto"
     make modules
     ```
-    3. copy the module library(.so file) to nginx modules directory
+    3. copy the module library (.so file) to the nginx modules directory
     ```
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
     ```
-    4. restart nginx
+    4. restart nginx server
     ```
     sudo systemctl restart nginx
     ```
@@ -239,7 +241,7 @@ If there are many connections in CLOSE_WAIT state, you can do the following.
     ```
     #define HTTP_REQUEST_HEADER_SOCKS5_KEY "socks5"
     #define HTTP_REQUEST_HEADER_SOCKS5_VALUE "socks5"
-    #define HTTP_REQUEST_HEADER_TVSEC_KEY "sec"	// recv/send tv_sec
+    #define HTTP_REQUEST_HEADER_TVSEC_KEY "sec"	    // recv/send tv_sec
     #define HTTP_REQUEST_HEADER_TVUSEC_KEY "usec"	// recv/send tv_usec
     #define HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY "forwardersec"		// forwarder tv_sec
     #define HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY "forwarderusec"	// forwarder tv_usec
@@ -267,11 +269,11 @@ If there are many connections in CLOSE_WAIT state, you can do the following.
     ./configure --with-compat --add-dynamic-module=../server --with-ld-opt="-lssl -lcrypto"
     make modules
     ```
-    3. copy the module library(.so file) to nginx modules directory
+    3. copy the module library (.so file) to the nginx modules directory
     ```
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
     ```
-    4. restart nginx
+    4. restart nginx server
     ```
     sudo systemctl restart nginx
     ```
@@ -301,11 +303,11 @@ If there are many connections in CLOSE_WAIT state, you can do the following.
     ./configure --with-compat --add-dynamic-module=../server --with-ld-opt="-lssl -lcrypto"
     make modules
     ```
-    2. copy the module library(.so file) to nginx modules directory
+    2. copy the module library (.so file) to the nginx modules directory
     ```
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
     ```
-    3. restart nginx
+    3. restart nginx server
     ```
     sudo systemctl restart nginx
     ```
@@ -349,17 +351,17 @@ If there are many connections in CLOSE_WAIT state, you can do the following.
     "jrsksbPHQ50h\n"\
     "-----END CERTIFICATE-----\n";
     ```
-    4. build my module(dynamic module)
+    4. build my module (dynamic module)
     ```
     cd socks5-nginx-module-v2/nginx-x.xx.x
     ./configure --with-compat --add-dynamic-module=../server --with-ld-opt="-lssl -lcrypto"
     make modules
     ```
-    5. copy the module library(.so file) to nginx modules directory
+    5. copy the module library (.so file) to the nginx modules directory
     ```
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
     ```
-    6. restart nginx
+    6. restart nginx server
     ```
     sudo systemctl restart nginx
     ```
@@ -372,7 +374,7 @@ If there are many connections in CLOSE_WAIT state, you can do the following.
     2. modify client.c file (if you change the certificate filename or directory path)
     ```
     char server_certificate_filename_socks5[256] = "server_socks5.crt";	// server certificate filename (Socks5 over TLS)
-    char server_certificate_file_directory_path_socks5[256] = ".";	// server certificate file directory path (Socks5 over TLS)
+    char server_certificate_file_directory_path_socks5[256] = ".";	    // server certificate file directory path (Socks5 over TLS)
     ```
     3. build (if you change the certificate filename or directory path)
     ```
@@ -382,11 +384,11 @@ If there are many connections in CLOSE_WAIT state, you can do the following.
 
 ### How to change socks5 server cipher suite TLS1.2, TLS1.3 (for Socks5 over TLS)
 - server
-    1. select cipher suite(TLS1.2) and check
+    1. select cipher suite (TLS1.2) and check
     ```
     openssl ciphers -v "AESGCM+ECDSA:CHACHA20+ECDSA:+AES256"
     ```
-    2. select cipher suite(TLS1.3) [https://www.openssl.org/docs/man3.0/man3/SSL_CTX_set_ciphersuites.html](https://www.openssl.org/docs/man3.0/man3/SSL_CTX_set_ciphersuites.html)
+    2. select cipher suite (TLS1.3) [https://www.openssl.org/docs/man3.0/man3/SSL_CTX_set_ciphersuites.html](https://www.openssl.org/docs/man3.0/man3/SSL_CTX_set_ciphersuites.html)
     ```
     TLS_AES_128_GCM_SHA256
     TLS_AES_256_GCM_SHA384
@@ -399,17 +401,17 @@ If there are many connections in CLOSE_WAIT state, you can do the following.
     char cipher_suite_tls_1_2[1000] = "AESGCM+ECDSA:CHACHA20+ECDSA:+AES256";	// TLS1.2
     char cipher_suite_tls_1_3[1000] = "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256";	// TLS1.3
     ```
-    4. build my module(dynamic module)
+    4. build my module (dynamic module)
     ```
     cd socks5-nginx-module-v2/nginx-x.xx.x
     ./configure --with-compat --add-dynamic-module=../server --with-ld-opt="-lssl -lcrypto"
     make modules
     ```
-    5. copy the module library(.so file) to nginx modules directory
+    5. copy the module library (.so file) to the nginx modules directory
     ```
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
     ```
-    6. restart nginx
+    6. restart nginx server
     ```
     sudo systemctl restart nginx
     ```
