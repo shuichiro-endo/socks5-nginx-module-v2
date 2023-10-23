@@ -118,11 +118,11 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     ```
     2. modify client.c file (if you change the certificate filename or directory path)
     ```
-    char server_certificate_filename_https[256] = "server_https.crt";	// server certificate filename (HTTPS)
-    char server_certificate_file_directory_path_https[256] = ".";	    // server certificate file directory path (HTTPS)
+    char server_certificate_filename_https[256] = "server_https.crt";   // server certificate filename (HTTPS)
+    char server_certificate_file_directory_path_https[256] = ".";       // server certificate file directory path (HTTPS)
 
-    char server_certificate_filename_socks5[256] = "server_socks5.crt";	// server certificate filename (Socks5 over TLS)
-    char server_certificate_file_directory_path_socks5[256] = ".";	    // server certificate file directory path (Socks5 over TLS)
+    char server_certificate_filename_socks5[256] = "server_socks5.crt"; // server certificate filename (Socks5 over TLS)
+    char server_certificate_file_directory_path_socks5[256] = ".";      // server certificate file directory path (Socks5 over TLS)
     ```
     3. build
     ```
@@ -216,10 +216,10 @@ If there are many connections in CLOSE_WAIT state, you can do the following.
     ```
     #define HTTP_REQUEST_HEADER_SOCKS5_KEY "socks5"
     #define HTTP_REQUEST_HEADER_SOCKS5_VALUE "socks5"
-    #define HTTP_REQUEST_HEADER_TVSEC_KEY "sec"		// recv/send tv_sec
-    #define HTTP_REQUEST_HEADER_TVUSEC_KEY "usec"	// recv/send tv_usec
-    #define HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY "forwardersec"		// forwarder tv_sec
-    #define HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY "forwarderusec"	// forwarder tv_usec
+    #define HTTP_REQUEST_HEADER_TVSEC_KEY "sec"     // recv/send tv_sec
+    #define HTTP_REQUEST_HEADER_TVUSEC_KEY "usec"   // recv/send tv_usec
+    #define HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY "forwardersec"      // forwarder tv_sec
+    #define HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY "forwarderusec"    // forwarder tv_usec
     ```
     2. build my module (dynamic module)
     ```
@@ -241,10 +241,10 @@ If there are many connections in CLOSE_WAIT state, you can do the following.
     ```
     #define HTTP_REQUEST_HEADER_SOCKS5_KEY "socks5"
     #define HTTP_REQUEST_HEADER_SOCKS5_VALUE "socks5"
-    #define HTTP_REQUEST_HEADER_TVSEC_KEY "sec"	    // recv/send tv_sec
-    #define HTTP_REQUEST_HEADER_TVUSEC_KEY "usec"	// recv/send tv_usec
-    #define HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY "forwardersec"		// forwarder tv_sec
-    #define HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY "forwarderusec"	// forwarder tv_usec
+    #define HTTP_REQUEST_HEADER_TVSEC_KEY "sec"     // recv/send tv_sec
+    #define HTTP_REQUEST_HEADER_TVUSEC_KEY "usec"   // recv/send tv_usec
+    #define HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY "forwardersec"      // forwarder tv_sec
+    #define HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY "forwarderusec"    // forwarder tv_usec
     #define HTTP_REQUEST_HEADER_USER_AGENT_VALUE "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
     
     ...
@@ -373,8 +373,8 @@ If there are many connections in CLOSE_WAIT state, you can do the following.
     ```
     2. modify client.c file (if you change the certificate filename or directory path)
     ```
-    char server_certificate_filename_socks5[256] = "server_socks5.crt";	// server certificate filename (Socks5 over TLS)
-    char server_certificate_file_directory_path_socks5[256] = ".";	    // server certificate file directory path (Socks5 over TLS)
+    char server_certificate_filename_socks5[256] = "server_socks5.crt"; // server certificate filename (Socks5 over TLS)
+    char server_certificate_file_directory_path_socks5[256] = ".";      // server certificate file directory path (Socks5 over TLS)
     ```
     3. build (if you change the certificate filename or directory path)
     ```
@@ -398,8 +398,8 @@ If there are many connections in CLOSE_WAIT state, you can do the following.
     ```
     3. modify ngx_http_socks5_module.c file
     ```
-    char cipher_suite_tls_1_2[1000] = "AESGCM+ECDSA:CHACHA20+ECDSA:+AES256";	// TLS1.2
-    char cipher_suite_tls_1_3[1000] = "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256";	// TLS1.3
+    char cipher_suite_tls_1_2[1000] = "AESGCM+ECDSA:CHACHA20+ECDSA:+AES256";                                        // TLS1.2
+    char cipher_suite_tls_1_3[1000] = "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256"; // TLS1.3
     ```
     4. build my module (dynamic module)
     ```
