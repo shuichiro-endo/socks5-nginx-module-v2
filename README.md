@@ -6,7 +6,10 @@ This module hides socks5 proxy in an http server.
 
 This supports CONNECT of the socks5 command only. (BIND and UDP ASSOCIATE are not available.)
 
+This is not compatible with [v1](https://github.com/shuichiro-endo/socks5-nginx-module).
+
 ## How it works
+- no forward proxy
 ```mermaid
 sequenceDiagram
     participant A as socks5 client
@@ -47,6 +50,71 @@ sequenceDiagram
         D-->>-C:  
         C-->>-B: 
         C-->>-B: HTTP GET Response (HTTPS)
+        C-->>-B: 
+    end
+```
+- forward proxy (http)
+```mermaid
+sequenceDiagram
+    participant A as socks5 client
+    participant B as my client
+    participant C as forward proxy (squid, ...)
+    participant D as nginx server (my socks5 module)
+    participant E as destination server (web, ssh, tor, etc.)
+    loop 
+        A->>+B: socks5 selection request (Socks5)
+        B->>+C: HTTP CONNECT Request (HTTP)
+        note right of C: User Authentication (no, basic, digest, ntlmv2, spnego(kerberos))
+        C-->>B: HTTP CONNECT Response Connection established (HTTP)
+        note right of C: TCP Tunnel
+        B->>+C: SSL connect (HTTPS)
+        C->>+D: SSL connect (HTTPS)
+        B->>+C: HTTP GET Request (HTTPS)
+        C->>+D: HTTP GET Request (HTTPS)
+        D->>D: check HTTP Request Header Key and Value (e.g. socks5: socks5)
+        note right of D: if the key and value do not match, do nothing
+        D-->>C: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
+        C-->>B: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
+        B->>+C: SSL connect (Socks5 over TLS)
+        C->>+D: SSL connect (Socks5 over TLS)
+        B->>+C: socks5 selection request (Socks5 over TLS)
+        C->>+D: socks5 selection request (Socks5 over TLS)
+        D-->>-C: socks5 selection response (Socks5 over TLS)
+        C-->>-B: socks5 selection response (Socks5 over TLS)
+        B-->>-A: socks5 selection response (Socks5)
+        alt socks5 server authentication method is username/password authentication
+        A->>+B: socks5 username/password authentication request (Socks5)
+        B->>+C: socks5 username/password authentication request (Socks5 over TLS)
+        C->>+D: socks5 username/password authentication request (Socks5 over TLS)
+        D->>D: check username and password
+        D-->>-C: socks5 username/password authentication response (Socks5 over TLS)
+        C-->>-B: socks5 username/password authentication response (Socks5 over TLS)
+        B-->>-A: socks5 username/password authentication response (Socks5)
+        end
+        A->>+B: socks5 socks request (Socks5)
+        B->>+C: socks5 socks request (Socks5 over TLS)
+        C->>+D: socks5 socks request (Socks5 over TLS)
+        D->>+E: check connection
+        D-->>-C: socks5 socks response (Socks5 over TLS)
+        C-->>-B: socks5 socks response (Socks5 over TLS)
+        B-->>-A: socks5 socks response (Socks5)
+        loop until communication ends (forwarder)
+            A->>+B: request
+            B->>+C: request (encrypt with TLS)
+            C->>+D: request (encrypt with TLS)
+            D->>+E: request
+            E-->>-D: response
+            D-->>-C: response (encrypt with TLS)
+            C-->>-B: response (encrypt with TLS)
+            B-->>-A: response
+        end
+        E-->>-D: 
+        D-->>-C: 
+        C-->>-B: 
+        D-->>-C: HTTP GET Response (HTTPS)
+        C-->>-B: HTTP GET Response (HTTPS)
+        D-->>-C: 
+        C-->>-B: 
         C-->>-B: 
     end
 ```
@@ -157,9 +225,9 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j forward_proxy_service_principal_name
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j HTTP/proxy.test.local@TEST.LOCAL -A 10
     ```
-    Note: The forward proxy (2:https) connection function is experimental.
+    Note: The forward proxy (2:https) connection is an experimental function.
     
-    2. connect to my client from other clients (browser, proxychains, etc.)
+    2. connect to my client from other clients (browser, proxychains, ...)
     ```
     proxychains4 curl -v https://www.google.com
     curl -v -x socks5h://127.0.0.1:9050 https://www.google.com
@@ -293,7 +361,7 @@ If there are many connections in CLOSE_WAIT state, you can do the following.
 - server
     1. modify ngx_http_socks5_module.c file
     ```
-    static char authentication_method = 0x0;	// 0x0:No Authentication Required	0x2:Username/Password Authentication
+    static char authentication_method = 0x0;	// 0x0:No Authentication Required  0x2:Username/Password Authentication
     static char username[256] = "socks5user";
     static char password[256] = "supersecretpassword";
     ```
