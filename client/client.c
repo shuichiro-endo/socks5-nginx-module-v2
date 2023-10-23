@@ -3708,8 +3708,8 @@ int worker(void *ptr)
 
 		SSL_CTX_set_default_verify_paths(target_ctx_http);
 		SSL_CTX_load_verify_locations(target_ctx_http, forward_proxy_certificate_filename_https, forward_proxy_certificate_file_directory_path_https);
-//		SSL_CTX_set_verify(target_ctx_http, SSL_VERIFY_PEER, NULL);
-		SSL_CTX_set_verify(target_ctx_http, SSL_VERIFY_NONE, NULL);
+		SSL_CTX_set_verify(target_ctx_http, SSL_VERIFY_PEER, NULL);
+//		SSL_CTX_set_verify(target_ctx_http, SSL_VERIFY_NONE, NULL);
 
 		target_ssl_http = SSL_new(target_ctx_http);
 		if(target_ssl_http == NULL){
