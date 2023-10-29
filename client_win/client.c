@@ -4376,26 +4376,28 @@ int main(int argc, char **argv)
 #endif
 	}
 
-	if(forward_proxy_authentication_flag == 0){
+	if(forward_proxy_flag > 0){	// http or https forward proxy
+		if(forward_proxy_authentication_flag == 0){
 #ifdef _DEBUG
-		printf("[I] Forward proxy authentication:no\n");
+			printf("[I] Forward proxy authentication:no\n");
 #endif
-	}else if(forward_proxy_authentication_flag == 1){
+		}else if(forward_proxy_authentication_flag == 1){
 #ifdef _DEBUG
-		printf("[I] Forward proxy authentication:basic\n");
+			printf("[I] Forward proxy authentication:basic\n");
 #endif
-	}else if(forward_proxy_authentication_flag == 2){
+		}else if(forward_proxy_authentication_flag == 2){
 #ifdef _DEBUG
-		printf("[I] Forward proxy authentication:digest\n");
+			printf("[I] Forward proxy authentication:digest\n");
 #endif
-	}else if(forward_proxy_authentication_flag == 3){
+		}else if(forward_proxy_authentication_flag == 3){
 #ifdef _DEBUG
-		printf("[I] Forward proxy authentication:ntlmv2\n");
+			printf("[I] Forward proxy authentication:ntlmv2\n");
 #endif
-	}else if(forward_proxy_authentication_flag == 4){
+		}else if(forward_proxy_authentication_flag == 4){
 #ifdef _DEBUG
-		printf("[I] Forward proxy authentication:spnego(kerberos)\n");
+			printf("[I] Forward proxy authentication:spnego(kerberos)\n");
 #endif
+		}
 	}
 
 #ifdef _DEBUG
