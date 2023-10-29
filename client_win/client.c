@@ -1320,8 +1320,8 @@ int convert_utf8_to_utf16(const char *input, char *output, int output_size)
 int get_av_pair_value(struct challenge_message *challenge_message, uint16_t av_id, unsigned char *data, int data_size)
 {
 	uint16_t target_info_len = 0;
-    uint16_t target_info_max_len = 0;
-    uint32_t target_info_buffer_offset = 0;
+	uint16_t target_info_max_len = 0;
+	uint32_t target_info_buffer_offset = 0;
 	unsigned char *pos = NULL;
 	struct av_pair *av_pair = NULL;
 	int length = 0;
