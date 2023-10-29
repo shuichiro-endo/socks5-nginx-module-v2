@@ -17,6 +17,7 @@ sequenceDiagram
     participant C as nginx server (my socks5 module)
     participant D as destination server (web, ssh, tor, etc.)
     loop 
+        A->>+B: connect
         A->>+B: socks5 selection request (Socks5)
         B->>+C: SSL connect (HTTPS)
         B->>+C: HTTP GET Request (HTTPS)
@@ -51,6 +52,7 @@ sequenceDiagram
         C-->>-B: 
         C-->>-B: HTTP GET Response (HTTPS)
         C-->>-B: 
+        B-->>-A: 
     end
 ```
 - forward proxy (http)
@@ -62,6 +64,7 @@ sequenceDiagram
     participant D as nginx server (my socks5 module)
     participant E as destination server (web, ssh, tor, etc.)
     loop 
+        A->>+B: connect
         A->>+B: socks5 selection request (Socks5)
         B->>+C: HTTP CONNECT Request (HTTP)
         note left of C: User Authentication (no, basic, digest, ntlmv2, spnego(kerberos))
@@ -118,6 +121,7 @@ sequenceDiagram
         C-->>-B: 
         D-->>-C: 
         C-->>-B: 
+        B-->>-A: 
     end
 ```
 
