@@ -67,7 +67,7 @@ sequenceDiagram
         A->>+B: connect
         A->>+B: socks5 selection request (Socks5)
         B->>+C: HTTP CONNECT Request (HTTP)
-        note left of C: User Authentication (no, basic, digest, ntlmv2, spnego(kerberos))
+        C->>C: User Authentication (no, basic, digest, ntlmv2, spnego(kerberos))
         C->>+D: check connection
         C-->>B: HTTP CONNECT Response Connection established (HTTP)
         note right of C: TCP Tunnel
