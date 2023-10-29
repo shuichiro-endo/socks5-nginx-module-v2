@@ -3328,7 +3328,7 @@ int worker(void *ptr)
 	int http_request_length = 0;
 
 
-	if(forward_proxy_flag == 1){	// http forward proxy
+	if(forward_proxy_flag > 0){	// http or https forward proxy
 		ZeroMemory(&forward_proxy_addr, sizeof(sockaddr_in));
 		ZeroMemory(&forward_proxy_addr6, sizeof(sockaddr_in6));
 		ZeroMemory(&hints, sizeof(addrinfo));
