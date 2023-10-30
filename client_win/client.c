@@ -1292,23 +1292,36 @@ int get_upper_string(const char *input, int input_length, char *output)
 }
 
 
+int get_number_of_bytes_of_utf16_string(char *input)
+{
+	int i = 0;
+
+	while(!(input[i] == '\0' && input[i+1] == '\0')){
+		i += 2;
+	}
+
+	return i;
+}
+
+
 int convert_utf8_to_utf16(const char *input, char *output, int output_size)
 {
 	int ret = 0;
 	int input_length = strlen(input);
 	int output_length = 0;
 
-	ret = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, input, input_length, (LPWSTR)output, output_size);
+	ret = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, input, input_length, (LPWSTR)output, output_size-2);
 	if(ret == 0){
 #ifdef _DEBUG
 		printf("[E] MultiByteToWideChar error:%d\n", GetLastError());
 #endif
 		return -1;
 	}
-	output_length = ret*2;	// UTF-16LE 2 bytes
+
+	output_length = get_number_of_bytes_of_utf16_string(output);
 
 #ifdef _DEBUG
-//	printf("input:%s, input_length%d\n", input, input_length);
+//	printf("input:%s, input_length:%d\n", input, input_length);
 //	printf("output:%d\n", output_length);
 //	print_bytes((unsigned char *)output, output_length);
 #endif

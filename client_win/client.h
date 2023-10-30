@@ -17,6 +17,7 @@ int encrypt_des_ecb(unsigned char *plaintext, int plaintext_length, unsigned cha
 int get_md4_hash(const unsigned char *input, int input_length, unsigned char *output, int output_size);
 int get_hmac_md5(const unsigned char *input, int input_length, const unsigned char *key, int key_length, unsigned char *output, int output_size);
 int get_upper_string(const char *input, int input_length, char *output);
+int get_number_of_bytes_of_utf16_string(char *input);
 int convert_utf8_to_utf16(const char *input, char *output, int output_size);
 int get_av_pair_value(struct challenge_message *challenge_message, uint16_t av_id, unsigned char *data, int data_size);
 int ntowfv2(const char *user, const char *password, const char *userdom, unsigned char *output, int output_size);

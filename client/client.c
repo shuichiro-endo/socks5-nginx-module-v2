@@ -1286,6 +1286,18 @@ int get_upper_string(const char *input, int input_length, char *output)
 }
 
 
+int get_number_of_bytes_of_utf16_string(char *input)
+{
+	int i = 0;
+
+	while(!(input[i] == '\0' && input[i+1] == '\0')){
+		i += 2;
+	}
+
+	return i;
+}
+
+
 int convert_utf8_to_utf16(const char *input, char *output, size_t output_size)
 {
 	iconv_t conv;
@@ -1294,7 +1306,7 @@ int convert_utf8_to_utf16(const char *input, char *output, size_t output_size)
 	char *output_buffer = output;
 	size_t input_length = strlen(input);
 	int output_length = (int)input_length*2;
-	size_t size = output_size-1;
+	size_t size = output_size-2;
 	int ret = 0;
 
 	if(input_length*2 > BUFFER_SIZE){
@@ -1330,6 +1342,15 @@ int convert_utf8_to_utf16(const char *input, char *output, size_t output_size)
 #endif
 		return -1;
 	}
+
+	output_length = get_number_of_bytes_of_utf16_string(output);
+
+#ifdef _DEBUG
+//	printf("input:%s, input_length:%d\n", input, strlen(input));
+//	printf("output:%d\n", output_length);
+//	print_bytes((unsigned char *)output, output_length);
+#endif
+
 
 	return output_length;
 }
