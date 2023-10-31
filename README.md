@@ -213,7 +213,7 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     2. connect to my server from my client
 
 - client
-    1. change character encoding (UTF-8) in terminal (e.g. en_US.UTF-8)
+    1. change character encoding in terminal (UTF-8, e.g. en_US.UTF-8)
 
     2. run my client
     ```

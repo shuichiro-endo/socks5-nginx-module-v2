@@ -51,7 +51,7 @@ copy "C:\Program Files\OpenSSL\bin\libssl-3-x64.dll" .
 ## Usage
 1. run command prompt
 
-2. change code page (UTF-8) of command prompt
+2. change code page of command prompt (UTF-8)
 ```
 chcp 65001
 ```
