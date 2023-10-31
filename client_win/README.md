@@ -47,3 +47,30 @@ cd socks5-nginx-module-v2\client_win
 copy "C:\Program Files\OpenSSL\bin\libcrypto-3-x64.dll" .
 copy "C:\Program Files\OpenSSL\bin\libssl-3-x64.dll" .
 ```
+
+## Usage
+1. run command prompt
+
+2. change code page (UTF-8) of command prompt
+```
+chcp 65001
+```
+
+3. run my client
+```
+usage   : client.exe -h listen_ip -p listen_port -H target_socks5server_domainname -P target_socks5server_https_port
+          [-A recv/send tv_sec(timeout 0-60 sec)] [-B recv/send tv_usec(timeout 0-1000000 microsec)] [-C forwarder tv_sec(timeout 0-300 sec)] [-D forwarder tv_usec(timeout 0-1000000 microsec)]
+          [-a forward proxy domainname] [-b forward proxy port] [-c forward proxy(1:http 2:https)]
+          [-d forward proxy authentication(1:basic 2:digest 3:ntlmv2) 4:spnego(kerberos)]
+          [-e forward proxy username] [-f forward proxy password] [-g forward proxy user domainname] [-i forward proxy workstationname] [-j forward proxy service principal name]
+example : client.exe -h 127.0.0.1 -p 9050 -H 192.168.0.10 -P 443
+        : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443
+        : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0
+        : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1
+        : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 1 -e forward_proxy_user -f forward_proxy_password
+        : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 2 -e forward_proxy_user -f forward_proxy_password
+        : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e forward_proxy_user -f forward_proxy_password -g forward_proxy_user_domainname -i forward_proxy_workstationname
+        : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e test01 -f p@ssw0rd -g test.local -i WORKSTATION -A 10
+        : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j forward_proxy_service_principal_name
+        : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j HTTP/proxy.test.local@TEST.LOCAL -A 10
+```

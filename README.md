@@ -213,7 +213,9 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     2. connect to my server from my client
 
 - client
-    1. run my client
+    1. change character encoding (UTF-8) in terminal (e.g. en_US.UTF-8)
+
+    2. run my client
     ```
     usage   : ./client -h listen_ip -p listen_port -H target_socks5server_domainname -P target_socks5server_https_port
               [-A recv/send tv_sec(timeout 0-60 sec)] [-B recv/send tv_usec(timeout 0-1000000 microsec)] [-C forwarder tv_sec(timeout 0-300 sec)] [-D forwarder tv_usec(timeout 0-1000000 microsec)]
@@ -233,7 +235,7 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     ```
     Note: The forward proxy (2:https) connection is an experimental function.
     
-    2. connect to my client from other clients (browser, proxychains, ...)
+    3. connect to my client from other clients (browser, proxychains, ...)
     ```
     proxychains4 curl -v https://www.google.com
     curl -v -x socks5h://127.0.0.1:9050 https://www.google.com
