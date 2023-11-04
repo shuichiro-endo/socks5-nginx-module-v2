@@ -1413,7 +1413,7 @@ char hex_char_to_int(char c)
 
 	if((c >= '0') && (c <= '9')){
 		ret = c - '0';
-	}else if((c >= 'a') && (c <= 'z')){
+	}else if((c >= 'a') && (c <= 'f')){
 		ret = c + 10 - 'a';
 	}else if((c >= 'A') && (c <= 'F')){
 		ret = c + 10 - 'A';
