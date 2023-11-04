@@ -4393,18 +4393,27 @@ int main(int argc, char **argv)
 		}else if(forward_proxy_authentication_flag == 1){
 #ifdef _DEBUG
 			printf("[I] Forward proxy authentication:basic\n");
+			printf("[I] Forward proxy username:%s\n", forward_proxy_username);
+			printf("[I] Forward proxy password:%s\n", forward_proxy_password);
 #endif
 		}else if(forward_proxy_authentication_flag == 2){
 #ifdef _DEBUG
 			printf("[I] Forward proxy authentication:digest\n");
+			printf("[I] Forward proxy username:%s\n", forward_proxy_username);
+			printf("[I] Forward proxy password:%s\n", forward_proxy_password);
 #endif
 		}else if(forward_proxy_authentication_flag == 3){
 #ifdef _DEBUG
 			printf("[I] Forward proxy authentication:ntlmv2\n");
+			printf("[I] Forward proxy username:%s\n", forward_proxy_username);
+			printf("[I] Forward proxy password:%s\n", forward_proxy_password);
+			printf("[I] Forward proxy user domainname:%s\n", forward_proxy_user_domainname);
+			printf("[I] Forward proxy worksrationname:%s\n", forward_proxy_workstationname);
 #endif
 		}else if(forward_proxy_authentication_flag == 4){
 #ifdef _DEBUG
 			printf("[I] Forward proxy authentication:spnego(kerberos)\n");
+			printf("[I] Forward proxy service principal name:%s\n", forward_proxy_spn);
 #endif
 		}
 	}
