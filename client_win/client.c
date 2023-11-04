@@ -4412,7 +4412,7 @@ int main(int argc, char **argv)
 			printf("[I] Forward proxy username:%s\n", forward_proxy_username);
 			printf("[I] Forward proxy password:%s\n", forward_proxy_password);
 			printf("[I] Forward proxy user domainname:%s\n", forward_proxy_user_domainname);
-			printf("[I] Forward proxy worksrationname:%s\n", forward_proxy_workstationname);
+			printf("[I] Forward proxy workstationname:%s\n", forward_proxy_workstationname);
 #endif
 		}else if(forward_proxy_authentication_flag == 4){
 #ifdef _DEBUG

@@ -303,7 +303,7 @@ $ ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d
 [I] Forward proxy username:aeiouac
 [I] Forward proxy password:pàßßw0rð@
 [I] Forward proxy user domainname:test.local
-[I] Forward proxy worksrationname:WORKSTATION
+[I] Forward proxy workstationname:WORKSTATION
 [I] Timeout recv/send tv_sec(0-60  sec): 10 sec recv/send tv_usec(0-1000000 microsec):      0 microsec
 [I] Timeout forwarder tv_sec(0-300 sec):  3 sec forwarder tv_usec(0-1000000 microsec):      0 microsec
 [I] [client -> server] Listening port 9050 on 0.0.0.0
