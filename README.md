@@ -285,6 +285,60 @@ If there are many connections in CLOSE_WAIT state, you can do the following.
 
 - restart client and server
 
+### Forward proxy authentication (3:ntlmv2)
+In Active Directory, if an Active Directory username contains an accent mark (e.g. é), the character may be converted to another character (e.g. é -> e).
+
+My client (Linux) does not have the ability to convert it automatically.
+
+Therefore, the username must be converted manually.
+
+- example
+```
+username:àéîõüåç       -> aeiouac
+password:pàßßw0rð@
+
+$ ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e aeiouac -f pàßßw0rð@ -g test.local -i WORKSTATION -A 10
+[I] Forward proxy connection:http
+[I] Forward proxy authentication:ntlmv2
+[I] Forward proxy username:aeiouac
+[I] Forward proxy password:pàßßw0rð@
+[I] Forward proxy user domainname:test.local
+[I] Forward proxy worksrationname:WORKSTATION
+[I] Timeout recv/send tv_sec(0-60  sec): 10 sec recv/send tv_usec(0-1000000 microsec):      0 microsec
+[I] Timeout forwarder tv_sec(0-300 sec):  3 sec forwarder tv_usec(0-1000000 microsec):      0 microsec
+[I] [client -> server] Listening port 9050 on 0.0.0.0
+[I] [client <- server] Connected from 127.0.0.1
+[I] Forward proxy domainname:127.0.0.1, Length:9
+[I] [server -> fproxy] Connecting ip:127.0.0.1 port:3128
+[I] [server <- fproxy] Connected to forward proxy server
+[I] negotiate_message ntlm_b64:TlRMTVNTUAABAAAABoIIAAAAAAAAAAAAAAAAAAAAAAA= ntlm_negotiate_message_length:32
+[I] [server -> fproxy] Send http request to forward proxy
+[I] [server <- fproxy] Recv http response from forward proxy
+[I] http_header_data:Proxy-Authenticate: NTLM TlRMTVNTUAACAAAABAAEADgAAAAGgokC1Sw1WyqBO6EAAAAAAAAAAGoAagA8AAAABgEAAAAAAA9URVNUAgAIAFQARQBTAFQAAQAMAEQARQBCAEkAQQBOAAQAFAB0AGUAcwB0AC4AbABvAGMAYQBsAAMAIgBkAGUAYgBpAGEAbgAuAHQAZQBzAHQALgBsAG8AYwBhAGwABwAIABjeNwTKDtoBAAAAAA==
+[I] authenticate_message ntlm_b64:TlRMTVNTUAADAAAAGAAYAEAAAACaAJoAWAAAAAoACgDyAAAABwAHAPwAAAALAAsAAwEAAAAAAAAAAAAABoKJAqXxKHGFLTY9SKn3Dz3ytVagU+ee6leU6AiNWv7/cAzXzyr10zNa+kMBAQAAAAAAAIDKwAPKDtoBoFPnnupXlOgAAAAAAgAIAFQARQBTAFQAAQAMAEQARQBCAEkAQQBOAAQAFAB0AGUAcwB0AC4AbABvAGMAYQBsAAMAIgBkAGUAYgBpAGEAbgAuAHQAZQBzAHQALgBsAG8AYwBhAGwABwAIABjeNwTKDtoBAAAAAAAAAAB0ZXN0LmxvY2FsYWVpb3VhY1dPUktTVEFUSU9O
+[I] [server -> fproxy] Send http request to forward proxy
+[I] [server <- fproxy] Recv http response from forward proxy
+[I] Forward proxy connection established
+[I] [server -> target] Try HTTPS connection (SSL_connect)
+[I] [server <- target] Succeed HTTPS connection (SSL_connect)
+[I] [server -> target] Send http request
+[I] [server <- target] count:1 rec:9
+[I] [server <- target] Server Socks5 OK
+[I] [server -> target] Try Socks5 over TLS connection (BIO_do_handshake)
+[I] [server <- target] Succeed Socks5 over TLS connection (BIO_do_handshake)
+[I] [client -> server] Receive selection request:4 bytes
+[I] [server -> target] Send selection request:4 bytes
+[I] [server <- target] Receive selection response:2 bytes
+[I] [client <- server] Send selection response:2 bytes
+[I] [client -> server] Receive socks request:21 bytes
+[I] [server -> target] Send socks request:21 bytes
+[I] [server <- target] Receive socks response:10 bytes
+[I] [client <- server] Send socks response:10 bytes
+[I] Forwarder
+[I] forwarder_bio recv error:0
+[I] Worker exit
+```
+
 ## Notes
 ### How to change HTTP Request Header Key and Value
 - server
