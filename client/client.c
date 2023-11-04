@@ -49,6 +49,7 @@
 #define USERNAME_MAX_SIZE 255
 #define PASSWORD_MAX_SIZE 255
 #define SPN_MAX_SIZE 260
+#define NTHASH_HEXSTRING_SIZE 32
 #define HTTP_HEADER_DATA_SIZE 2000
 #define BASIC_AUTH_CREDENTIAL_SIZE 1000
 #define BASIC_AUTH_CREDENTIAL_BASE64_SIZE 2000
@@ -78,6 +79,7 @@ char *forward_proxy_password = NULL;
 char *forward_proxy_user_domainname = NULL;
 char *forward_proxy_workstationname = NULL;
 char *forward_proxy_spn = NULL;	// service principal name
+char *forward_proxy_nthash_hexstring = NULL;	// nthash hexstring
 int forward_proxy_flag = 0;		// 0:no 1:http 2:https
 int forward_proxy_authentication_flag = 0;	// 0:no 1:basic 2:digest 3:ntlmv2 4:spnego(kerberos)
 
@@ -1405,6 +1407,64 @@ int get_av_pair_value(struct challenge_message *challenge_message, uint16_t av_i
 }
 
 
+char hex_char_to_int(char c)
+{
+	char ret = 0;
+
+	if((c >= '0') && (c <= '9')){
+		ret = c - '0';
+	}else if((c >= 'a') && (c <= 'z')){
+		ret = c + 10 - 'a';
+	}else if((c >= 'A') && (c <= 'F')){
+		ret = c + 10 - 'A';
+	}else{
+		ret = -1;
+	}
+
+	return ret;
+}
+
+
+int hexstring_to_array(char *hexstring, int hexstring_length, unsigned char *output, int output_size)
+{
+	char tmp1 = 0;
+	char tmp2 = 0;
+	int output_length = 0;
+
+	if(hexstring_length % 2 != 0){
+#ifdef _DEBUG
+		printf("[E] hexstring_length error\n");
+#endif
+		return -1;
+	}
+
+	if(hexstring_length / 2 > output_size){
+#ifdef _DEBUG
+		printf("[E] hexstring_length error\n");
+#endif
+		return -1;
+	}
+
+	for(int i=0; i<hexstring_length; i+=2){
+		tmp1 = hex_char_to_int(hexstring[i]);
+		tmp2 = hex_char_to_int(hexstring[i+1]);
+
+		if(tmp1 == -1 || tmp2 == -1){
+#ifdef _DEBUG
+			printf("[E] hex_char_to_int error\n");
+#endif
+			return -1;
+		}
+
+		tmp1 = tmp1 << 4;
+		output[output_length] = (unsigned char)(tmp1 + tmp2);
+		output_length++;
+	}
+
+	return output_length;
+}
+
+
 /*
  * Reference:
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nlmp/5e550938-91d4-459f-b67d-75d70009e3f3
@@ -1413,7 +1473,7 @@ int ntowfv2(const char *user, const char *password, const char *userdom, unsigne
 {
 	int ret = 0;
 
-	int password_length = strlen(password);
+	int password_length = 0;
 	int password_utf16le_length = 0;
 	int password_utf16le_md4_length = 0;
 	unsigned char password_utf16le[1000];
@@ -1438,35 +1498,49 @@ int ntowfv2(const char *user, const char *password, const char *userdom, unsigne
 	bzero(&response_key, 16);
 
 
-	// UNICODE(Passwd)
-	ret = convert_utf8_to_utf16(password, (char *)&password_utf16le, 1000);
-	if(ret == -1){
+	if(forward_proxy_nthash_hexstring == NULL){
+		password_length = strlen(password);
+
+		// UNICODE(Passwd)
+		ret = convert_utf8_to_utf16(password, (char *)&password_utf16le, 1000);
+		if(ret == -1){
 #ifdef _DEBUG
-		printf("[E] convert_utf8_to_utf16 error\n");
+			printf("[E] convert_utf8_to_utf16 error\n");
 #endif
-		return -1;
-	}
-	password_utf16le_length = ret;
+			return -1;
+		}
+		password_utf16le_length = ret;
 
 #ifdef _DEBUG
-//	printf("password_utf16le:%d\n", password_utf16le_length);
-//	print_bytes(password_utf16le, password_utf16le_length);
+//		printf("password_utf16le:%d\n", password_utf16le_length);
+//		print_bytes(password_utf16le, password_utf16le_length);
 #endif
 
-	// MD4(UNICODE(Passwd))
-	ret = get_md4_hash((const unsigned char *)&password_utf16le, password_utf16le_length, (unsigned char *)&password_utf16le_md4, 16);
-	if(ret == -1){
+		// MD4(UNICODE(Passwd))
+		ret = get_md4_hash((const unsigned char *)&password_utf16le, password_utf16le_length, (unsigned char *)&password_utf16le_md4, 16);
+		if(ret == -1){
 #ifdef _DEBUG
-		printf("[E] get_md4_hash error\n");
+			printf("[E] get_md4_hash error\n");
 #endif
-		return -1;
+			return -1;
+		}
+		password_utf16le_md4_length = ret;
+	}else{	// NTHash
+		ret = hexstring_to_array(forward_proxy_nthash_hexstring, strlen(forward_proxy_nthash_hexstring), (unsigned char *)&password_utf16le_md4, 16);
+		if(ret != 16){
+#ifdef _DEBUG
+			printf("[E] hexstring_to_array error\n");
+#endif
+			return -1;
+		}
+		password_utf16le_md4_length = ret;
 	}
-	password_utf16le_md4_length = ret;
 
 #ifdef _DEBUG
 //	printf("password_utf16le_md4:%d\n", password_utf16le_md4_length);
 //	print_bytes(password_utf16le_md4, password_utf16le_md4_length);
 #endif
+
 
 	// Uppercase(user)
 	ret = get_upper_string(user, strlen(user), (char *)&user_upper);
@@ -4177,10 +4251,12 @@ error:
 void usage(char *filename)
 {
 	printf("usage   : %s -h listen_ip -p listen_port -H target_socks5server_domainname -P target_socks5server_https_port\n", filename);
-	printf("          [-A recv/send tv_sec(timeout 0-60 sec)] [-B recv/send tv_usec(timeout 0-1000000 microsec)] [-C forwarder tv_sec(timeout 0-300 sec)] [-D forwarder tv_usec(timeout 0-1000000 microsec)]\n");
+	printf("          [-A recv/send tv_sec(timeout 0-60 sec)] [-B recv/send tv_usec(timeout 0-1000000 microsec)]\n");
+	printf("          [-C forwarder tv_sec(timeout 0-300 sec)] [-D forwarder tv_usec(timeout 0-1000000 microsec)]\n");
 	printf("          [-a forward proxy domainname] [-b forward proxy port] [-c forward proxy(1:http 2:https)]\n");
 	printf("          [-d forward proxy authentication(1:basic 2:digest 3:ntlmv2 4:spnego(kerberos))]\n");
-	printf("          [-e forward proxy username] [-f forward proxy password] [-g forward proxy user domainname] [-i forward proxy workstationname] [-j forward proxy service principal name]\n");
+	printf("          [-e forward proxy username] [-f forward proxy password] [-g forward proxy user domainname]\n");
+	printf("          [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]\n");
 	printf("example : %s -h 0.0.0.0 -p 9050 -H 192.168.0.10 -P 443\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0\n", filename);
@@ -4189,6 +4265,8 @@ void usage(char *filename)
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 2 -e forward_proxy_user -f forward_proxy_password\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e forward_proxy_user -f forward_proxy_password -g forward_proxy_user_domainname -i forward_proxy_workstationname\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e test01 -f p@ssw0rd -g test.local -i WORKSTATION -A 10\n", filename);
+	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e forward_proxy_user -g forward_proxy_user_domainname -i forward_proxy_workstationname -k forward_proxy_nthash_hexstring\n", filename);
+	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e test01 -g test.local -i WORKSTATION -k de26cce0356891a4a020e7c4957afc72 -A 10\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j forward_proxy_service_principal_name\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j HTTP/proxy.test.local@TEST.LOCAL -A 10\n", filename);
 }
@@ -4196,7 +4274,7 @@ void usage(char *filename)
 int main(int argc, char **argv)
 {
 	int opt;
-	const char* optstring = "h:p:H:P:A:B:C:D:a:b:c:d:e:f:g:i:j:";
+	const char* optstring = "h:p:H:P:A:B:C:D:a:b:c:d:e:f:g:i:j:k:";
 	opterr = 0;
 	long tv_sec = 3;	// recv send
 	long tv_usec = 0;	// recv send
@@ -4273,6 +4351,10 @@ int main(int argc, char **argv)
 			forward_proxy_spn = optarg;
 			break;
 
+		case 'k':
+			forward_proxy_nthash_hexstring = optarg;
+			break;
+
 		default:
 			usage(argv[0]);
 			exit(1);
@@ -4315,7 +4397,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if((forward_proxy_authentication_flag >= 1 && forward_proxy_authentication_flag <= 3) && (forward_proxy_username == NULL || forward_proxy_password == NULL)){
+	if((forward_proxy_authentication_flag >= 1 && forward_proxy_authentication_flag <= 3) && (forward_proxy_username == NULL || (forward_proxy_nthash_hexstring == NULL && forward_proxy_password == NULL))){
 		usage(argv[0]);
 		exit(1);
 	}
@@ -4332,9 +4414,25 @@ int main(int argc, char **argv)
 
 
 	if(forward_proxy_authentication_flag >= 1 && forward_proxy_authentication_flag <= 3){
-		if(strlen(forward_proxy_username) > USERNAME_MAX_SIZE || strlen(forward_proxy_password) > PASSWORD_MAX_SIZE){
+		if(strlen(forward_proxy_username) > USERNAME_MAX_SIZE){
 #ifdef _DEBUG
-			printf("[E] Forward proxy username or password length is too long (username max length:%d, password max length:%d)\n", USERNAME_MAX_SIZE, PASSWORD_MAX_SIZE);
+			printf("[E] Forward proxy username length is too long (username max length:%d)\n", USERNAME_MAX_SIZE);
+#endif
+			return -1;
+		}
+
+		if(forward_proxy_password != NULL && strlen(forward_proxy_password) > PASSWORD_MAX_SIZE){
+#ifdef _DEBUG
+			printf("[E] Forward proxy password length is too long (password max length:%d)\n", PASSWORD_MAX_SIZE);
+#endif
+			return -1;
+		}
+	}
+
+	if(forward_proxy_authentication_flag == 3){	// forward proxy authentication: ntlmv2
+		if(forward_proxy_nthash_hexstring != NULL && strlen(forward_proxy_nthash_hexstring) != NTHASH_HEXSTRING_SIZE){
+#ifdef _DEBUG
+			printf("[E] Forward proxy nthash hexstring length is not %d\n", NTHASH_HEXSTRING_SIZE);
 #endif
 			return -1;
 		}
@@ -4406,9 +4504,14 @@ int main(int argc, char **argv)
 #ifdef _DEBUG
 			printf("[I] Forward proxy authentication:ntlmv2\n");
 			printf("[I] Forward proxy username:%s\n", forward_proxy_username);
-			printf("[I] Forward proxy password:%s\n", forward_proxy_password);
+			if(forward_proxy_password != NULL){
+				printf("[I] Forward proxy password:%s\n", forward_proxy_password);
+			}
 			printf("[I] Forward proxy user domainname:%s\n", forward_proxy_user_domainname);
 			printf("[I] Forward proxy workstationname:%s\n", forward_proxy_workstationname);
+			if(forward_proxy_nthash_hexstring != NULL){
+				printf("[I] Forward proxy nthash hexstring:%s\n", forward_proxy_nthash_hexstring);
+			}
 #endif
 		}else if(forward_proxy_authentication_flag == 4){
 #ifdef _DEBUG

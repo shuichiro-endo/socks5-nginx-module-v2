@@ -20,6 +20,8 @@ int get_upper_string(const char *input, int input_length, char *output);
 int get_number_of_bytes_of_utf16_string(char *input);
 int convert_utf8_to_utf16(const char *input, char *output, int output_size);
 int get_av_pair_value(struct challenge_message *challenge_message, uint16_t av_id, unsigned char *data, int data_size);
+char hex_char_to_int(char c);
+int hexstring_to_array(char *hexstring, int hexstring_length, unsigned char *output, int output_size);
 int ntowfv2(const char *user, const char *password, const char *userdom, unsigned char *output, int output_size);
 int lmowfv2(const char *user, const char *password, const char *userdom, unsigned char *output, int output_size);
 int generate_response_ntlmv2(struct challenge_message *challenge_message, struct authenticate_message *authenticate_message);

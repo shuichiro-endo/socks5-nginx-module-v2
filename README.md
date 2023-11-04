@@ -218,10 +218,12 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     2. run my client
     ```
     usage   : ./client -h listen_ip -p listen_port -H target_socks5server_domainname -P target_socks5server_https_port
-              [-A recv/send tv_sec(timeout 0-60 sec)] [-B recv/send tv_usec(timeout 0-1000000 microsec)] [-C forwarder tv_sec(timeout 0-300 sec)] [-D forwarder tv_usec(timeout 0-1000000 microsec)]
+              [-A recv/send tv_sec(timeout 0-60 sec)] [-B recv/send tv_usec(timeout 0-1000000 microsec)]
+              [-C forwarder tv_sec(timeout 0-300 sec)] [-D forwarder tv_usec(timeout 0-1000000 microsec)]
               [-a forward proxy domainname] [-b forward proxy port] [-c forward proxy(1:http 2:https)]
               [-d forward proxy authentication(1:basic 2:digest 3:ntlmv2 4:spnego(kerberos))]
-              [-e forward proxy username] [-f forward proxy password] [-g forward proxy user domainname] [-i forward proxy workstationname] [-j forward proxy service principal name]
+              [-e forward proxy username] [-f forward proxy password] [-g forward proxy user domainname]
+              [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]
     example : ./client -h 0.0.0.0 -p 9050 -H 192.168.0.10 -P 443
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0
@@ -230,6 +232,8 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 2 -e forward_proxy_user -f forward_proxy_password
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e forward_proxy_user -f forward_proxy_password -g forward_proxy_user_domainname -i forward_proxy_workstationname
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e test01 -f p@ssw0rd -g test.local -i WORKSTATION -A 10
+            : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e forward_proxy_user -g forward_proxy_user_domainname -i forward_proxy_workstationname -k forward_proxy_nthash_hexstring
+            : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e test01 -g test.local -i WORKSTATION -k de26cce0356891a4a020e7c4957afc72 -A 10
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j forward_proxy_service_principal_name
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j HTTP/proxy.test.local@TEST.LOCAL -A 10
     ```
