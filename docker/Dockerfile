@@ -28,6 +28,8 @@ RUN mkdir /etc/nginx/ssl
 #RUN openssl req -x509 -days 3650 -nodes -newkey rsa:4096 -subj /CN=localhost -keyout /etc/nginx/ssl/server_https_private.key -out /etc/nginx/ssl/server_https.crt
 COPY server_https_private.key /etc/nginx/ssl/
 COPY server_https.crt /etc/nginx/ssl/
+RUN chmod 600 /etc/nginx/ssl/server_https_private.key \
+    && chmod 644 /etc/nginx/ssl/server_https.crt
 COPY ssl.conf /etc/nginx/conf.d/
 
 
