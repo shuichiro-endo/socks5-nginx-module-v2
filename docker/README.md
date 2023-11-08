@@ -14,7 +14,7 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     openssl req -x509 -days 3650 -nodes -newkey rsa:4096 -subj /CN=localhost -outform PEM -keyout server_https_private.key -out server_https.crt
     openssl x509 -text -noout -in server_https.crt
     ```
-    2. generate socks5 over tls server privatekey, publickey and certificate
+    2. generate socks5 over tls server privatekey and certificate
     ```
     cd socks5-nginx-module-v2/docker
     openssl req -x509 -days 3650 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -subj /CN=localhost -outform PEM -keyout server_socks5_private.key -out server_socks5.crt
