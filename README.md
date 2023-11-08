@@ -128,17 +128,19 @@ sequenceDiagram
 ## Installation
 ### Install dependencies
 - server
+    - gcc and make
     - nginx
     - openssl and libssl-dev
     ```
-    sudo apt install nginx libpcre3 libpcre3-dev zlib1g zlib1g-dev openssl libssl-dev
+    sudo apt install gcc make nginx libpcre3 libpcre3-dev zlib1g zlib1g-dev openssl libssl-dev
     ```
 
 - client
+    - gcc and make
     - openssl and libssl-dev
     - krb5-user, libkrb5-3 and libkrb5-dev
     ```
-    sudo apt install openssl libssl-dev krb5-user libkrb5-3 libkrb5-dev
+    sudo apt install gcc make openssl libssl-dev krb5-user libkrb5-3 libkrb5-dev
     ```
 
 ### Version
@@ -166,7 +168,7 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     wget https://nginx.org/download/nginx-x.xx.x.tar.gz
     tar -xzvf nginx-x.xx.x.tar.gz
     ```
-    4. change privatekey and certificate ([How to change socks5 server privatekey and certificate (for Socks5 over TLS)](https://github.com/shuichiro-endo/socks5-nginx-module-v2#how-to-change-socks5-server-privatekey-and-certificate-for-socks5-over-tls))
+    4. change privatekey and certificate (See [How to change socks5 server privatekey and certificate (for Socks5 over TLS)](https://github.com/shuichiro-endo/socks5-nginx-module-v2#how-to-change-socks5-server-privatekey-and-certificate-for-socks5-over-tls).)
     5. build my module (dynamic module)
     ```
     cd nginx-x.xx.x
@@ -175,6 +177,8 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     ```
     6. copy the module library (.so file) to the nginx modules directory
     ```
+    ls -l /usr/share/nginx/modules/
+    mkdir -p /usr/lib/nginx/modules
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
     ```
     7. load the module library
@@ -493,6 +497,8 @@ $ ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d
     ```
     5. copy the module library (.so file) to the nginx modules directory
     ```
+    ls -l /usr/share/nginx/modules/
+    mkdir -p /usr/lib/nginx/modules
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
     ```
     6. restart nginx server
