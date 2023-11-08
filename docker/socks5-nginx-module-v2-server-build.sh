@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+#  Title:  socks5-nginx-module-v2-server-build.sh
+#  Author: Shuichiro Endo
+#
 
 set -e
 

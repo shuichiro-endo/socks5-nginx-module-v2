@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+#  Title:  startup.sh
+#  Author: Shuichiro Endo
+#
 
 set -e
 

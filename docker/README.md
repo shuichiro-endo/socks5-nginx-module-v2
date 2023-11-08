@@ -1,6 +1,6 @@
 # socks5 server dockerfile (nginx module)
 
-## build
+## Build
 ### 1. download the latest [socks5 nginx module v2](https://github.com/shuichiro-endo/socks5-nginx-module-v2)
 ```
 git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git

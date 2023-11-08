@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+#  Title:  generate_index.sh
+#  Author: Shuichiro Endo
+#
 
 set -e
 
@@ -19,7 +23,6 @@ echo '
 <pre>
 
 ' >> /var/www/html/index.html
-
 
 echo "I &#9829; socks5" | /usr/games/cowsay -f $(ls /usr/share/cowsay/cows | shuf -n 1) | sed -z 's/\n/<br>\n/g'  >> /var/www/html/index.html
 
