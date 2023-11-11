@@ -528,7 +528,21 @@ int get_http_header(const char *input, const char *key, char *output, int output
 	int length = 0;
 
 	start = strstr(input, key);
+	if(start == NULL){
+#ifdef _DEBUG
+//		printf("[E] start is NULL\n");
+#endif
+		return -1;
+	}
+
 	end = strstr(start, "\r\n");
+	if(end == NULL){
+#ifdef _DEBUG
+//		printf("[E] end is NULL\n");
+#endif
+		return -1;
+	}
+
 	d = end - start;
 	if((d <= 0) || (d >= output_size)){
 #ifdef _DEBUG
