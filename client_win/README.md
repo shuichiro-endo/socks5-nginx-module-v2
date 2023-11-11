@@ -65,6 +65,7 @@ usage   : client.exe -h listen_ip -p listen_port -H target_socks5server_domainna
           [-d forward proxy authentication(1:basic 2:digest 3:ntlmv2) 4:spnego(kerberos)]
           [-e forward proxy username] [-f forward proxy password] [-g forward proxy user domainname]
           [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]
+          [-t tor connection]
 example : client.exe -h 127.0.0.1 -p 9050 -H 192.168.0.10 -P 443
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0
@@ -77,4 +78,6 @@ example : client.exe -h 127.0.0.1 -p 9050 -H 192.168.0.10 -P 443
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e test01 -g test.local -i WORKSTATION -k de26cce0356891a4a020e7c4957afc72 -A 10
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j forward_proxy_service_principal_name
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j HTTP/proxy.test.local@TEST.LOCAL -A 10
+        : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -t -A 10 -C 20
+        : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e test01 -f p@ssw0rd -g test.local -i WORKSTATION -t -A 20 -C 20
 ```

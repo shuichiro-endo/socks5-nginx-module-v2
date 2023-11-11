@@ -60,7 +60,10 @@
 
 #define HTTP_REQUEST_HEADER_SOCKS5_KEY "socks5"
 #define HTTP_REQUEST_HEADER_SOCKS5_VALUE "socks5"
-#define HTTP_REQUEST_HEADER_TVSEC_KEY "sec"	// recv/send tv_sec
+#define HTTP_REQUEST_HEADER_TOR_KEY "tor"
+#define HTTP_REQUEST_HEADER_TOR_VALUE_ON "on"
+#define HTTP_REQUEST_HEADER_TOR_VALUE_OFF "off"
+#define HTTP_REQUEST_HEADER_TVSEC_KEY "sec"		// recv/send tv_sec
 #define HTTP_REQUEST_HEADER_TVUSEC_KEY "usec"	// recv/send tv_usec
 #define HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY "forwardersec"		// forwarder tv_sec
 #define HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY "forwarderusec"	// forwarder tv_usec
@@ -80,6 +83,7 @@ char *forward_proxy_user_domainname = NULL;
 char *forward_proxy_workstationname = NULL;
 char *forward_proxy_spn = NULL;	// service principal name
 char *forward_proxy_nthash_hexstring = NULL;	// nthash hexstring
+int tor_connection_flag = 0;	// 0:off 1:on
 int forward_proxy_flag = 0;		// 0:no 1:http 2:https
 int forward_proxy_authentication_flag = 0;	// 0:no 1:basic 2:digest 3:ntlmv2 4:spnego(kerberos)
 
@@ -3759,10 +3763,19 @@ int worker(void *ptr)
 	}
 
 
-	if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
-		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
-	}else{	// ipv6 address
-		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+	if(tor_connection_flag == 0){	// tor connection: off
+		if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
+			http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_OFF, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+		}else{	// ipv6 address
+			http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_OFF, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+		}
+	}else{	// tor connection: on
+		if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
+			http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_ON, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+		}else{	// ipv6 address
+			http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_ON, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+		}
+
 	}
 
 
@@ -4307,6 +4320,7 @@ void usage(char *filename)
 	printf("          [-d forward proxy authentication(1:basic 2:digest 3:ntlmv2 4:spnego(kerberos))]\n");
 	printf("          [-e forward proxy username] [-f forward proxy password] [-g forward proxy user domainname]\n");
 	printf("          [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]\n");
+	printf("          [-t tor connection]\n");
 	printf("example : %s -h 0.0.0.0 -p 9050 -H 192.168.0.10 -P 443\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0\n", filename);
@@ -4319,12 +4333,14 @@ void usage(char *filename)
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e test01 -g test.local -i WORKSTATION -k de26cce0356891a4a020e7c4957afc72 -A 10\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j forward_proxy_service_principal_name\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j HTTP/proxy.test.local@TEST.LOCAL -A 10\n", filename);
+	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -t -A 10 -C 20\n", filename);
+	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e test01 -f p@ssw0rd -g test.local -i WORKSTATION -t -A 20 -C 20\n", filename);
 }
 
 int main(int argc, char **argv)
 {
 	int opt;
-	const char* optstring = "h:p:H:P:A:B:C:D:a:b:c:d:e:f:g:i:j:k:";
+	const char* optstring = "h:p:H:P:A:B:C:D:a:b:c:d:e:f:g:i:j:k:t";
 	opterr = 0;
 	long tv_sec = 3;	// recv send
 	long tv_usec = 0;	// recv send
@@ -4348,7 +4364,7 @@ int main(int argc, char **argv)
 		case 'P':
 			socks5_target_port = optarg;
 			break;
-			
+
 		case 'A':
 			tv_sec = atol(optarg);
 			break;
@@ -4403,6 +4419,10 @@ int main(int argc, char **argv)
 
 		case 'k':
 			forward_proxy_nthash_hexstring = optarg;
+			break;
+
+		case 't':
+			tor_connection_flag = 1;
 			break;
 
 		default:
@@ -4569,6 +4589,14 @@ int main(int argc, char **argv)
 			printf("[I] Forward proxy service principal name:%s\n", forward_proxy_spn);
 #endif
 		}
+	}
+
+	if(tor_connection_flag == 0){
+#ifdef _DEBUG
+		printf("[I] Tor server connection:off\n");
+#endif
+	}else{
+		printf("[I] Tor server connection:on\n");
 	}
 
 #ifdef _DEBUG
