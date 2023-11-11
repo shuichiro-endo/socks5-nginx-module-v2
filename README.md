@@ -361,6 +361,9 @@ $ ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d
     ```
     #define HTTP_REQUEST_HEADER_SOCKS5_KEY "socks5"
     #define HTTP_REQUEST_HEADER_SOCKS5_VALUE "socks5"
+    #define HTTP_REQUEST_HEADER_TOR_KEY "tor"
+    #define HTTP_REQUEST_HEADER_TOR_VALUE_ON "on"
+    #define HTTP_REQUEST_HEADER_TOR_VALUE_OFF "off"
     #define HTTP_REQUEST_HEADER_TVSEC_KEY "sec"     // recv/send tv_sec
     #define HTTP_REQUEST_HEADER_TVUSEC_KEY "usec"   // recv/send tv_usec
     #define HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY "forwardersec"      // forwarder tv_sec
@@ -386,6 +389,9 @@ $ ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d
     ```
     #define HTTP_REQUEST_HEADER_SOCKS5_KEY "socks5"
     #define HTTP_REQUEST_HEADER_SOCKS5_VALUE "socks5"
+    #define HTTP_REQUEST_HEADER_TOR_KEY "tor"
+    #define HTTP_REQUEST_HEADER_TOR_VALUE_ON "on"
+    #define HTTP_REQUEST_HEADER_TOR_VALUE_OFF "off"
     #define HTTP_REQUEST_HEADER_TVSEC_KEY "sec"     // recv/send tv_sec
     #define HTTP_REQUEST_HEADER_TVUSEC_KEY "usec"   // recv/send tv_usec
     #define HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY "forwardersec"      // forwarder tv_sec
@@ -394,7 +400,19 @@ $ ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d
     
     ...
     
-    http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: %s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+    if(tor_connection_flag == 0){	// tor connection: off
+        if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
+            http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_OFF, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+        }else{	// ipv6 address
+            http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_OFF, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+        }
+    }else{	// tor connection: on
+        if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
+            http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_ON, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+        }else{	// ipv6 address
+            http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_ON, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+        }
+    }
     ```
     2. build
     ```
@@ -552,6 +570,29 @@ $ ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
     ```
     6. restart nginx server
+    ```
+    sudo systemctl restart nginx
+    ```
+
+### How to change ip address and port number for tor connection
+- server
+    1. modify ngx_http_socks5_module.c file
+    ```
+    char tor_server_ip[256] = "127.0.0.1";
+    char tor_server_ip_atyp = 0x1;		// ipv4:0x1 domainname:0x3 ipv6:0x4
+    uint16_t tor_server_port = 9050;
+    ```
+    2. build my module(dynamic module)
+    ```
+    cd socks5-nginx-module-v2/nginx-x.xx.x
+    ./configure --with-compat --add-dynamic-module=../server --with-ld-opt="-lssl -lcrypto"
+    make modules
+    ```
+    3. copy the module library (.so file) to the nginx modules directory
+    ```
+    sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    ```
+    4. restart nginx server
     ```
     sudo systemctl restart nginx
     ```
