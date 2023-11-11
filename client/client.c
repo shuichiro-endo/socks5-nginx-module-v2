@@ -2805,7 +2805,11 @@ int forward_proxy_authentication_no(int forward_proxy_sock, char *target_domainn
 	int ret = 0;
 
 
-	http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: */*\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: */*\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}else{	// ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT [%s]:%s HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: */*\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}
 
 	// HTTP Request
 	sen = send_data(forward_proxy_sock, http_request, http_request_length, tv_sec, tv_usec);
@@ -2869,7 +2873,11 @@ int forward_proxy_authentication_basic(int forward_proxy_sock, char *target_doma
 	printf("[I] Forward proxy credential (base64):%s\n", proxy_b64_credential);
 #endif
 
-	http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nProxy-Authorization: Basic %s\r\nUser-Agent: %s\r\nAccept: */*\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, proxy_b64_credential, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nProxy-Authorization: Basic %s\r\nUser-Agent: %s\r\nAccept: */*\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, proxy_b64_credential, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}else{	// ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT [%s]:%s HTTP/1.1\r\nHost: [%s]:%s\r\nProxy-Authorization: Basic %s\r\nUser-Agent: %s\r\nAccept: */*\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, proxy_b64_credential, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}
 
 	// HTTP Request
 	sen = send_data(forward_proxy_sock, http_request, http_request_length, tv_sec, tv_usec);
@@ -2938,7 +2946,11 @@ int forward_proxy_authentication_digest(int forward_proxy_sock, char *target_dom
 	memcpy(&(digest_param->method), "CONNECT", strlen("CONNECT"));
 	length = snprintf(digest_param->uri, 500, "%s:%s", target_domainname, target_port_number);
 
-	http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}else{	// ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT [%s]:%s HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}
 
 	// HTTP Request
 	sen = send_data(forward_proxy_sock, http_request, http_request_length, tv_sec, tv_usec);
@@ -3005,7 +3017,11 @@ int forward_proxy_authentication_digest(int forward_proxy_sock, char *target_dom
 	}
 
 	bzero(http_request, BUFFER_SIZE+1);
-	http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nProxy-Authorization: Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", cnonce=\"%s\", nc=%s, qop=%s, response=\"%s\"\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, digest_param->username, digest_param->realm, digest_param->nonce, digest_param->uri, digest_param->cnonce, digest_param->nc, digest_param->qop, digest_param->response_hash, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nProxy-Authorization: Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", cnonce=\"%s\", nc=%s, qop=%s, response=\"%s\"\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, digest_param->username, digest_param->realm, digest_param->nonce, digest_param->uri, digest_param->cnonce, digest_param->nc, digest_param->qop, digest_param->response_hash, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}else{	// ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT [%s]:%s HTTP/1.1\r\nHost: [%s]:%s\r\nProxy-Authorization: Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", cnonce=\"%s\", nc=%s, qop=%s, response=\"%s\"\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, digest_param->username, digest_param->realm, digest_param->nonce, digest_param->uri, digest_param->cnonce, digest_param->nc, digest_param->qop, digest_param->response_hash, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}
 
 	// HTTP Request
 	sen = send_data(forward_proxy_sock, http_request, http_request_length, tv_sec, tv_usec);
@@ -3143,7 +3159,11 @@ int forward_proxy_authentication_ntlmv2(int forward_proxy_sock, char *target_dom
 	printf("[I] negotiate_message ntlm_b64:%s ntlm_negotiate_message_length:%d\n", ntlm_b64, ntlm_negotiate_message_length);
 #endif
 
-	http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nProxy-Authorization: NTLM %s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, ntlm_b64, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nProxy-Authorization: NTLM %s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, ntlm_b64, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}else{	// ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT [%s]:%s HTTP/1.1\r\nHost: [%s]:%s\r\nProxy-Authorization: NTLM %s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, ntlm_b64, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}
 
 	// HTTP Request
 	sen = send_data(forward_proxy_sock, http_request, http_request_length, tv_sec, tv_usec);
@@ -3236,7 +3256,11 @@ int forward_proxy_authentication_ntlmv2(int forward_proxy_sock, char *target_dom
 #endif
 
 	bzero(http_request, BUFFER_SIZE+1);
-	http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nProxy-Authorization: NTLM %s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, ntlm_b64, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nProxy-Authorization: NTLM %s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, ntlm_b64, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}else{	// ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT [%s]:%s HTTP/1.1\r\nHost: [%s]:%s\r\nProxy-Authorization: NTLM %s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, ntlm_b64, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}
 
 	// HTTP Request
 	sen = send_data(forward_proxy_sock, http_request, http_request_length, tv_sec, tv_usec);
@@ -3314,7 +3338,11 @@ int forward_proxy_authentication_spnego(int forward_proxy_sock, char *target_dom
 	printf("[I] b64_kerberos_token:%s\n", b64_kerberos_token);
 #endif
 
-	http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}else{	// no ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT [%s]:%s HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}
 
 	// HTTP Request
 	sen = send_data(forward_proxy_sock, http_request, http_request_length, tv_sec, tv_usec);
@@ -3368,7 +3396,11 @@ int forward_proxy_authentication_spnego(int forward_proxy_sock, char *target_dom
 	}
 
 	bzero(http_request, BUFFER_SIZE+1);
-	http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nProxy-Authorization: Negotiate %s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, b64_kerberos_token, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nProxy-Authorization: Negotiate %s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, b64_kerberos_token, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}else{	// ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT [%s]:%s HTTP/1.1\r\nHost: [%s]:%s\r\nProxy-Authorization: Negotiate %s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, b64_kerberos_token, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
+	}
 
 	// HTTP Request
 	sen = send_data(forward_proxy_sock, http_request, http_request_length, tv_sec, tv_usec);
@@ -3727,7 +3759,11 @@ int worker(void *ptr)
 	}
 
 
-	http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: %s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+	if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+	}else{	// ipv6 address
+		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+	}
 
 
 	if(forward_proxy_flag == 1){	// http forward proxy
