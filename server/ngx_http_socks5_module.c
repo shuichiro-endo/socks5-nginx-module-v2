@@ -646,13 +646,13 @@ error:
 }
 
 
-int send_socks_response_ipv4_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char req, char rsv, char atyp, long tv_sec, long tv_usec)
+int send_socks_response_ipv4_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char rep, char rsv, char atyp, long tv_sec, long tv_usec)
 {
 	int sen;
 	struct socks_response_ipv4 *socks_response_ipv4 = (struct socks_response_ipv4 *)malloc(sizeof(struct socks_response_ipv4));
 	
 	socks_response_ipv4->ver = ver;		// protocol version
-	socks_response_ipv4->req = req;		// Connection refused
+	socks_response_ipv4->rep = rep;		// Connection refused
 	socks_response_ipv4->rsv = rsv;		// RESERVED
 	socks_response_ipv4->atyp = atyp;	// IPv4
 	bzero(socks_response_ipv4->bnd_addr, 4);	// BND.ADDR
@@ -666,13 +666,13 @@ int send_socks_response_ipv4_bio(ngx_http_request_t *r, int client_sock, BIO *cl
 }
 
 
-int send_socks_response_ipv6_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char req, char rsv, char atyp, long tv_sec, long tv_usec)
+int send_socks_response_ipv6_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char rep, char rsv, char atyp, long tv_sec, long tv_usec)
 {
 	int sen;
 	struct socks_response_ipv6 *socks_response_ipv6 = (struct socks_response_ipv6 *)malloc(sizeof(struct socks_response_ipv6));
 	
 	socks_response_ipv6->ver = ver;		// protocol version
-	socks_response_ipv6->req = req;		// Connection refused
+	socks_response_ipv6->rep = rep;		// Connection refused
 	socks_response_ipv6->rsv = rsv;		// RESERVED
 	socks_response_ipv6->atyp = atyp;	// IPv6
 	bzero(socks_response_ipv6->bnd_addr, 16);	// BND.ADDR

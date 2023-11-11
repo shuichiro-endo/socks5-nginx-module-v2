@@ -21,8 +21,8 @@ int recv_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer, int l
 int send_data(ngx_http_request_t *r, int sock, void *buffer, int length, long tv_sec, long tv_usec);
 int send_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec);
 int forwarder_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, int target_sock, long tv_sec, long tv_usec);
-int send_socks_response_ipv4_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char req, char rsv, char atyp, long tv_sec, long tv_usec);
-int send_socks_response_ipv6_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char req, char rsv, char atyp, long tv_sec, long tv_usec);
+int send_socks_response_ipv4_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char rep, char rsv, char atyp, long tv_sec, long tv_usec);
+int send_socks_response_ipv6_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char rep, char rsv, char atyp, long tv_sec, long tv_usec);
 int bio_do_handshake_non_blocking(ngx_http_request_t *r, int sock, BIO *bio, long tv_sec, long tv_usec);
 void close_socket(int sock);
 int worker(ngx_http_request_t *r, void *ptr);

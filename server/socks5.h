@@ -219,7 +219,7 @@ struct socks_request_ipv6
 struct socks_response
 {
 	char ver;
-	char req;
+	char rep;
 	char rsv;
 	char atyp;
 	char bnd_addr;
@@ -229,7 +229,7 @@ struct socks_response
 struct socks_response_ipv4
 {
 	char ver;
-	char req;
+	char rep;
 	char rsv;
 	char atyp;
 	char bnd_addr[4];
@@ -239,7 +239,7 @@ struct socks_response_ipv4
 struct socks_response_domainname
 {
 	char ver;
-	char req;
+	char rep;
 	char rsv;
 	char atyp;
 	char bnd_addr[256];	// the maximum length of FQDN is 255.
@@ -249,7 +249,7 @@ struct socks_response_domainname
 struct socks_response_ipv6
 {
 	char ver;
-	char req;
+	char rep;
 	char rsv;
 	char atyp;
 	char bnd_addr[16];
