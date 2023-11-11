@@ -1137,9 +1137,6 @@ int worker(ngx_http_request_t *r, void *ptr)
 	char tor_dst_addr_len = 0;
 	char tor_dst_addr[256] = {0};
 	char tor_dst_port[2] = {0};
-	uint16_t tor_dst_port_hs = 0;
-	char tor_dst_addr_string[INET6_ADDRSTRLEN+1] = {0};
-	char *tor_dst_addr_string_pointer = tor_dst_addr_string;
 
 	if(tor_connection_flag == 0){
 		if(atyp == 0x1){	// IPv4
@@ -1387,20 +1384,17 @@ int worker(ngx_http_request_t *r, void *ptr)
 			tor_dst_atyp = atyp;
 			memcpy(&tor_dst_addr, &socks_request_ipv4->dst_addr, 4);
 			memcpy(&tor_dst_port, &socks_request_ipv4->dst_port, 2);
-			tor_dst_port_hs = ntohs(*(uint16_t *)tor_dst_port);
 		}else if(atyp == 0x3){	// domain name
 			socks_request_domainname = (struct socks_request_domainname *)buffer;
 			tor_dst_atyp = atyp;
 			tor_dst_addr_len = socks_request_domainname->dst_addr_len;
 			memcpy(&tor_dst_addr, &socks_request_domainname->dst_addr, tor_dst_addr_len);
 			memcpy(&tor_dst_port, &socks_request_domainname->dst_addr[(u_short)tor_dst_addr_len], 2);
-			tor_dst_port_hs = ntohs(*(uint16_t *)tor_dst_port);
 		}else if(atyp == 0x4){	// IPv6
 			socks_request_ipv6 = (struct socks_request_ipv6 *)buffer;
 			tor_dst_atyp = atyp;
 			memcpy(&tor_dst_addr, &socks_request_ipv6->dst_addr, 16);
 			memcpy(&tor_dst_port, &socks_request_ipv6->dst_port, 2);
-			tor_dst_port_hs = ntohs(*(uint16_t *)tor_dst_port);
 		}else {
 #ifdef _DEBUG
 			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] Not implemented");
@@ -1420,13 +1414,17 @@ int worker(ngx_http_request_t *r, void *ptr)
 #ifdef _DEBUG
 		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Tor server atyp:0x%d ip:%s port:%d", tor_server_ip_atyp, tor_server_ip, tor_server_port);
 		if(tor_dst_atyp == 0x1){	// IPv4
+			char tor_dst_addr_string[INET6_ADDRSTRLEN+1] = {0};
+			char *tor_dst_addr_string_pointer = tor_dst_addr_string;
 			inet_ntop(AF_INET, &tor_dst_addr, tor_dst_addr_string_pointer, INET6_ADDRSTRLEN);
-			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Destination server atyp:0x%d addr:%s port:%d", tor_dst_atyp, tor_dst_addr_string_pointer, tor_dst_port_hs);
+			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Destination server atyp:0x%d addr:%s port:%d", tor_dst_atyp, tor_dst_addr_string_pointer, ntohs(*(uint16_t *)tor_dst_port));
 		}else if(tor_dst_atyp == 0x3){	// domain name
-			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Destination server atyp:0x%d addr:%s len:%d port:%d", tor_dst_atyp, tor_dst_addr, tor_dst_addr_len, tor_dst_port_hs);
+			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Destination server atyp:0x%d addr:%s len:%d port:%d", tor_dst_atyp, tor_dst_addr, tor_dst_addr_len, ntohs(*(uint16_t *)tor_dst_port));
 		}else if(tor_dst_atyp == 0x4){	// IPv6
+			char tor_dst_addr_string[INET6_ADDRSTRLEN+1] = {0};
+			char *tor_dst_addr_string_pointer = tor_dst_addr_string;
 			inet_ntop(AF_INET6, &tor_dst_addr, tor_dst_addr_string_pointer, INET6_ADDRSTRLEN);
-			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Destination server atyp:0x%d addr:%s port:%d", tor_dst_atyp, tor_dst_addr_string_pointer, tor_dst_port_hs);
+			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Destination server atyp:0x%d addr:%s port:%d", tor_dst_atyp, tor_dst_addr_string_pointer, ntohs(*(uint16_t *)tor_dst_port));
 		}
 #endif
 
