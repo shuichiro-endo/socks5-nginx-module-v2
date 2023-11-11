@@ -10,4 +10,6 @@ set -e
 
 /etc/init.d/cron start
 
+/etc/init.d/tor start
+
 /usr/sbin/nginx -g "daemon off;"

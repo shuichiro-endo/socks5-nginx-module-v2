@@ -1,0 +1,13 @@
+ClientOnly 1
+EnforceDistinctSubnets 1
+UseEntryGuards 1
+NumEntryGuards 8
+#GeoIPExcludeUnknown 1
+AutomapHostsSuffixes .onion,.exit
+AutomapHostsOnResolve 1
+#EntryNodes
+ExcludeNodes SlowServer,{jp},{gb},{us},{ca},{au},{nz}
+#ExcludeExitNodes
+#ExitNodes
+#LongLivedPorts
+StrictNodes 1

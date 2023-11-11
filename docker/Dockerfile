@@ -21,6 +21,7 @@ RUN apt-get update \
         libssl-dev \
         cron \
         cowsay \
+        tor \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -53,6 +54,11 @@ COPY root /var/spool/cron/crontabs/
 RUN chmod 755 /root/script/generate_index.sh \
     && chmod 600 /var/spool/cron/crontabs/root \
     && rm -rf /var/www/html/*
+
+
+# tor
+WORKDIR /root
+COPY torrc /etc/tor/
 
 
 # startup
