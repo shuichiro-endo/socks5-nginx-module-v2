@@ -58,9 +58,9 @@ static char password[256] = "supersecretpassword";
 char cipher_suite_tls_1_2[1000] = "AESGCM+ECDSA:CHACHA20+ECDSA:+AES256";	// TLS1.2
 char cipher_suite_tls_1_3[1000] = "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256";	// TLS1.3
 
-char tor_server_ip[256] = "127.0.0.1";
-char tor_server_ip_atyp = 0x1;		// ipv4:0x1 domainname:0x3 ipv6:0x4
-uint16_t tor_server_port = 9050;
+char tor_client_ip[256] = "127.0.0.1";
+char tor_client_ip_atyp = 0x1;		// ipv4:0x1 domainname:0x3 ipv6:0x4
+uint16_t tor_client_port = 9050;
 
 
 static ngx_http_output_header_filter_pt ngx_http_next_header_filter;
@@ -693,7 +693,7 @@ int send_socks_response_ipv6_bio(ngx_http_request_t *r, int client_sock, BIO *cl
 }
 
 
-int do_socks5_handshake_tor_server(ngx_http_request_t *r, int tor_sock, char tor_dst_atyp, char tor_dst_addr_len, char *tor_dst_addr, char *tor_dst_port, long tv_sec, long tv_usec)
+int do_socks5_handshake_tor_client(ngx_http_request_t *r, int tor_sock, char tor_dst_atyp, char tor_dst_addr_len, char *tor_dst_addr, char *tor_dst_port, long tv_sec, long tv_usec)
 {
 	int rec, sen;
 	int ret = 0;
@@ -710,13 +710,13 @@ int do_socks5_handshake_tor_server(ngx_http_request_t *r, int tor_sock, char tor
 	sen = send_data(r, tor_sock, selection_request, length, tv_sec, tv_usec);
 	if(sen <= 0){
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server -> torsrv] Send selection request");
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server -> torclt] Send selection request");
 #endif
 		free(selection_request);
 		goto error;
 	}
 #ifdef _DEBUG
-	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> torsrv] Send selection request:%d bytes", sen);
+	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> torclt] Send selection request:%d bytes", sen);
 #endif
 
 
@@ -724,17 +724,17 @@ int do_socks5_handshake_tor_server(ngx_http_request_t *r, int tor_sock, char tor
 	rec = recv_data(r, tor_sock, buffer, BUFFER_SIZE, tv_sec, tv_usec);
 	if(rec <= 0){
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torsrv] Receive selection response");
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torclt] Receive selection response");
 #endif
 		goto error;
 	}
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torsrv] Receive selection response:%d bytes", rec);
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torclt] Receive selection response:%d bytes", rec);
 #endif
 	struct selection_response *selection_response = (struct selection_response *)buffer;
 	if(selection_response->method != 0x0){
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torsrv] Selection response method error");
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torclt] Selection response method error");
 #endif
 		goto error;
 	}
@@ -752,7 +752,7 @@ int do_socks5_handshake_tor_server(ngx_http_request_t *r, int tor_sock, char tor
 		sen = send_data(r, tor_sock, socks_request, sizeof(struct socks_request_ipv4), tv_sec, tv_usec);
 		if(sen <= 0){
 #ifdef _DEBUG
-			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server -> torsrv] Send socks request");
+			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server -> torclt] Send socks request");
 #endif
 			free(socks_request);
 			goto error;
@@ -769,7 +769,7 @@ int do_socks5_handshake_tor_server(ngx_http_request_t *r, int tor_sock, char tor
 		sen = send_data(r, tor_sock, socks_request, length, tv_sec, tv_usec);
 		if(sen <= 0){
 #ifdef _DEBUG
-			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server -> torsrv] Send socks request");
+			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server -> torclt] Send socks request");
 #endif
 			free(socks_request);
 			goto error;
@@ -785,7 +785,7 @@ int do_socks5_handshake_tor_server(ngx_http_request_t *r, int tor_sock, char tor
 		sen = send_data(r, tor_sock, socks_request, sizeof(struct socks_request_ipv6), tv_sec, tv_usec);
 		if(sen <= 0){
 #ifdef _DEBUG
-			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server -> torsrv] Send socks request");
+			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server -> torclt] Send socks request");
 #endif
 			free(socks_request);
 			goto error;
@@ -797,7 +797,7 @@ int do_socks5_handshake_tor_server(ngx_http_request_t *r, int tor_sock, char tor
 		goto error;
 	}
 #ifdef _DEBUG
-	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> torsrv] Send socks request:%d bytes", sen);
+	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> torclt] Send socks request:%d bytes", sen);
 #endif
 
 
@@ -805,17 +805,17 @@ int do_socks5_handshake_tor_server(ngx_http_request_t *r, int tor_sock, char tor
 	rec = recv_data(r, tor_sock, buffer, BUFFER_SIZE, tv_sec, tv_usec);
 	if(rec <= 0){
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torsrv] Receive socks response");
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torclt] Receive socks response");
 #endif
 		goto error;
 	}
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torsrv] Receive socks response:%d bytes", rec);
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torclt] Receive socks response:%d bytes", rec);
 #endif
 	struct socks_response *socks_response = (struct socks_response *)buffer;
 	if(socks_response->rep != 0x0){
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torsrv] Socks response rep error:%d", socks_response->rep);
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torclt] Socks response rep error:%d", socks_response->rep);
 #endif
 	}
 	ret = socks_response->rep;
@@ -1245,10 +1245,10 @@ int worker(ngx_http_request_t *r, void *ptr)
 			goto error;
 		}
 	}else{	// tor connection
-		if(tor_server_ip_atyp == 0x1){	// IPv4
+		if(tor_client_ip_atyp == 0x1){	// IPv4
 			family = AF_INET;
 			target_addr.sin_family = AF_INET;
-			ret = inet_pton(family, (const char *)&tor_server_ip, &target_addr.sin_addr);
+			ret = inet_pton(family, (const char *)&tor_client_ip, &target_addr.sin_addr);
 			if(ret <= 0){
 #ifdef _DEBUG
 				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] inet_pton error:%d", ret);
@@ -1264,12 +1264,12 @@ int worker(ngx_http_request_t *r, void *ptr)
 
 				goto error;
 			}
-			target_addr.sin_port = htons(tor_server_port);
-		}else if(tor_server_ip_atyp == 0x3){	// domain name
-			domainname_length = strlen(tor_server_ip);
-			memcpy(&domainname, &tor_server_ip, domainname_length);
+			target_addr.sin_port = htons(tor_client_port);
+		}else if(tor_client_ip_atyp == 0x3){	// domain name
+			domainname_length = strlen(tor_client_ip);
+			memcpy(&domainname, &tor_client_ip, domainname_length);
 #ifdef _DEBUG
-			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Tor server domainname:%s Length:%d", domainname, domainname_length);
+			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Tor client domainname:%s Length:%d", domainname, domainname_length);
 #endif
 
 			colon = strstr(domainname, ":");	// check ipv6 address
@@ -1317,14 +1317,14 @@ int worker(ngx_http_request_t *r, void *ptr)
 				target_addr.sin_family = AF_INET;
 				tmp_ipv4 = (struct sockaddr_in *)target_host->ai_addr;
 				memcpy(&target_addr.sin_addr, &tmp_ipv4->sin_addr, sizeof(unsigned long));
-				target_addr.sin_port = htons(tor_server_port);
+				target_addr.sin_port = htons(tor_client_port);
 				freeaddrinfo(target_host);
 			}else if(target_host->ai_family == AF_INET6){
 				family = AF_INET6;
 				target_addr6.sin6_family = AF_INET6;
 				tmp_ipv6 = (struct sockaddr_in6 *)target_host->ai_addr;
 				memcpy(&target_addr6.sin6_addr, &tmp_ipv6->sin6_addr, sizeof(struct in6_addr));
-				target_addr6.sin6_port = htons(tor_server_port);
+				target_addr6.sin6_port = htons(tor_client_port);
 				freeaddrinfo(target_host);
 			}else{
 #ifdef _DEBUG
@@ -1342,10 +1342,10 @@ int worker(ngx_http_request_t *r, void *ptr)
 				freeaddrinfo(target_host);
 				goto error;
 			}
-		}else if(tor_server_ip_atyp == 0x4){	// IPv6
+		}else if(tor_client_ip_atyp == 0x4){	// IPv6
 			family = AF_INET6;
 			target_addr6.sin6_family = AF_INET6;
-			ret = inet_pton(family, (const char *)&tor_server_ip, &target_addr6.sin6_addr);
+			ret = inet_pton(family, (const char *)&tor_client_ip, &target_addr6.sin6_addr);
 			if(ret <= 0){
 
 #ifdef _DEBUG
@@ -1362,7 +1362,7 @@ int worker(ngx_http_request_t *r, void *ptr)
 
 				goto error;
 			}
-			target_addr6.sin6_port = htons(tor_server_port);
+			target_addr6.sin6_port = htons(tor_client_port);
 		}else{
 #ifdef _DEBUG
 			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] Not implemented");
@@ -1412,7 +1412,7 @@ int worker(ngx_http_request_t *r, void *ptr)
 		}
 
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Tor server atyp:0x%d ip:%s port:%d", tor_server_ip_atyp, tor_server_ip, tor_server_port);
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Tor client atyp:0x%d ip:%s port:%d", tor_client_ip_atyp, tor_client_ip, tor_client_port);
 		if(tor_dst_atyp == 0x1){	// IPv4
 			char tor_dst_addr_string[INET6_ADDRSTRLEN+1] = {0};
 			char *tor_dst_addr_string_pointer = tor_dst_addr_string;
@@ -1428,7 +1428,7 @@ int worker(ngx_http_request_t *r, void *ptr)
 		}
 #endif
 
-		atyp = tor_server_ip_atyp;
+		atyp = tor_client_ip_atyp;
 		cmd = 0x1;
 	}
 
@@ -1444,7 +1444,7 @@ int worker(ngx_http_request_t *r, void *ptr)
 			if(tor_connection_flag == 0){
 				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> target] Connecting ip:%s port:%d", inet_ntoa(target_addr.sin_addr), ntohs(target_addr.sin_port));
 			}else{
-				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> torsrv] Connecting ip:%s port:%d", inet_ntoa(target_addr.sin_addr), ntohs(target_addr.sin_port));
+				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> torclt] Connecting ip:%s port:%d", inet_ntoa(target_addr.sin_addr), ntohs(target_addr.sin_port));
 			}
 
 #endif
@@ -1457,7 +1457,7 @@ int worker(ngx_http_request_t *r, void *ptr)
 				if(tor_connection_flag == 0){
 					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- target] Cannot connect errno:%d", err);
 				}else{
-					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torsrv] Cannot connect errno:%d", err);
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torclt] Cannot connect errno:%d", err);
 				}
 #endif
 				
@@ -1481,10 +1481,10 @@ int worker(ngx_http_request_t *r, void *ptr)
 #endif
 			}else{
 #ifdef _DEBUG
-				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torsrv] Connected ip:%s port:%d", inet_ntoa(target_addr.sin_addr), ntohs(target_addr.sin_port));
+				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torclt] Connected ip:%s port:%d", inet_ntoa(target_addr.sin_addr), ntohs(target_addr.sin_port));
 #endif
 
-				ret = do_socks5_handshake_tor_server(r, target_sock, tor_dst_atyp, tor_dst_addr_len, tor_dst_addr, tor_dst_port, tv_sec, tv_usec);
+				ret = do_socks5_handshake_tor_client(r, target_sock, tor_dst_atyp, tor_dst_addr_len, tor_dst_addr, tor_dst_port, tv_sec, tv_usec);
 				if(ret != 0){
 					if(ret < 0){
 						sen = send_socks_response_ipv4_bio(r, client_sock, client_bio_socks5, 0x5, 0x5, 0x0, 0x1, tv_sec, tv_usec);
@@ -1578,7 +1578,7 @@ int worker(ngx_http_request_t *r, void *ptr)
 				if(tor_connection_flag == 0){
 					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> target] Connecting ip:%s port:%d", inet_ntoa(target_addr.sin_addr), ntohs(target_addr.sin_port));
 				}else{
-					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> torsrv] Connecting ip:%s port:%d", inet_ntoa(target_addr.sin_addr), ntohs(target_addr.sin_port));
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> torclt] Connecting ip:%s port:%d", inet_ntoa(target_addr.sin_addr), ntohs(target_addr.sin_port));
 				}
 #endif
 				target_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -1590,7 +1590,7 @@ int worker(ngx_http_request_t *r, void *ptr)
 					if(tor_connection_flag == 0){
 						ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- target] Cannot connect errno:%d", err);
 					}else{
-						ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torsrv] Cannot connect errno:%d", err);
+						ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torclt] Cannot connect errno:%d", err);
 					}
 #endif
 
@@ -1614,10 +1614,10 @@ int worker(ngx_http_request_t *r, void *ptr)
 #endif
 				}else{
 #ifdef _DEBUG
-					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torsrv] Connected ip:%s port:%d", inet_ntoa(target_addr.sin_addr), ntohs(target_addr.sin_port));
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torclt] Connected ip:%s port:%d", inet_ntoa(target_addr.sin_addr), ntohs(target_addr.sin_port));
 #endif
 
-					ret = do_socks5_handshake_tor_server(r, target_sock, tor_dst_atyp, tor_dst_addr_len, tor_dst_addr, tor_dst_port, tv_sec, tv_usec);
+					ret = do_socks5_handshake_tor_client(r, target_sock, tor_dst_atyp, tor_dst_addr_len, tor_dst_addr, tor_dst_port, tv_sec, tv_usec);
 					if(ret != 0){
 						if(ret < 0){
 							sen = send_socks_response_ipv4_bio(r, client_sock, client_bio_socks5, 0x5, 0x5, 0x0, 0x1, tv_sec, tv_usec);
@@ -1713,7 +1713,7 @@ int worker(ngx_http_request_t *r, void *ptr)
 				if(tor_connection_flag == 0){
 					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> target] Connecting ip:%s port:%d", target_addr6_string_pointer, ntohs(target_addr6.sin6_port));
 				}else{
-					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> torsrv] Connecting ip:%s port:%d", target_addr6_string_pointer, ntohs(target_addr6.sin6_port));
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> torclt] Connecting ip:%s port:%d", target_addr6_string_pointer, ntohs(target_addr6.sin6_port));
 				}
 #endif
 				target_sock = socket(AF_INET6, SOCK_STREAM, 0);
@@ -1725,7 +1725,7 @@ int worker(ngx_http_request_t *r, void *ptr)
 					if(tor_connection_flag == 0){
 						ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- target] Cannot connect errno:%d", err);
 					}else{
-						ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torsrv] Cannot connect errno:%d", err);
+						ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torclt] Cannot connect errno:%d", err);
 					}
 #endif
 					
@@ -1749,10 +1749,10 @@ int worker(ngx_http_request_t *r, void *ptr)
 #endif
 				}else{
 #ifdef _DEBUG
-					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torsrv] Connected ip:%s port:%d", target_addr6_string_pointer, ntohs(target_addr6.sin6_port));
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torclt] Connected ip:%s port:%d", target_addr6_string_pointer, ntohs(target_addr6.sin6_port));
 #endif
 
-					ret = do_socks5_handshake_tor_server(r, target_sock, tor_dst_atyp, tor_dst_addr_len, tor_dst_addr, tor_dst_port, tv_sec, tv_usec);
+					ret = do_socks5_handshake_tor_client(r, target_sock, tor_dst_atyp, tor_dst_addr_len, tor_dst_addr, tor_dst_port, tv_sec, tv_usec);
 					if(ret != 0){
 						if(ret < 0){
 							sen = send_socks_response_ipv6_bio(r, client_sock, client_bio_socks5, 0x5, 0x5, 0x0, 0x4, tv_sec, tv_usec);
@@ -1866,7 +1866,7 @@ int worker(ngx_http_request_t *r, void *ptr)
 			if(tor_connection_flag == 0){
 				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> target] Connecting ip:%s port:%d", target_addr6_string_pointer, ntohs(target_addr6.sin6_port));
 			}else{
-				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> torsrv] Connecting ip:%s port:%d", target_addr6_string_pointer, ntohs(target_addr6.sin6_port));
+				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server -> torclt] Connecting ip:%s port:%d", target_addr6_string_pointer, ntohs(target_addr6.sin6_port));
 			}
 #endif
 			target_sock = socket(AF_INET6, SOCK_STREAM, 0);
@@ -1878,7 +1878,7 @@ int worker(ngx_http_request_t *r, void *ptr)
 				if(tor_connection_flag == 0){
 					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- target] Cannot connect errno:%d", err);
 				}else{
-					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torsrv] Cannot connect errno:%d", err);
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torclt] Cannot connect errno:%d", err);
 				}
 #endif
 				
@@ -1902,10 +1902,10 @@ int worker(ngx_http_request_t *r, void *ptr)
 #endif
 			}else{
 #ifdef _DEBUG
-				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torsrv] Connected ip:%s port:%d", target_addr6_string_pointer, ntohs(target_addr6.sin6_port));
+				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torclt] Connected ip:%s port:%d", target_addr6_string_pointer, ntohs(target_addr6.sin6_port));
 #endif
 
-				ret = do_socks5_handshake_tor_server(r, target_sock, tor_dst_atyp, tor_dst_addr_len, tor_dst_addr, tor_dst_port, tv_sec, tv_usec);
+				ret = do_socks5_handshake_tor_client(r, target_sock, tor_dst_atyp, tor_dst_addr_len, tor_dst_addr, tor_dst_port, tv_sec, tv_usec);
 				if(ret != 0){
 					if(ret < 0){
 						sen = send_socks_response_ipv6_bio(r, client_sock, client_bio_socks5, 0x5, 0x5, 0x0, 0x4, tv_sec, tv_usec);

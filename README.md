@@ -578,9 +578,9 @@ $ ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d
 - server
     1. modify ngx_http_socks5_module.c file
     ```
-    char tor_server_ip[256] = "127.0.0.1";
-    char tor_server_ip_atyp = 0x1;		// ipv4:0x1 domainname:0x3 ipv6:0x4
-    uint16_t tor_server_port = 9050;
+    char tor_client_ip[256] = "127.0.0.1";
+    char tor_client_ip_atyp = 0x1;		// ipv4:0x1 domainname:0x3 ipv6:0x4
+    uint16_t tor_client_port = 9050;
     ```
     2. build my module(dynamic module)
     ```
