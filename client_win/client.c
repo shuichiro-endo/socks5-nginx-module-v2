@@ -4286,7 +4286,7 @@ void usage(char *filename)
 	printf("          [-d forward proxy authentication(1:basic 2:digest 3:ntlmv2) 4:spnego(kerberos)]\n");
 	printf("          [-e forward proxy username] [-f forward proxy password] [-g forward proxy user domainname]\n");
 	printf("          [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]\n");
-	printf("          [-t tor connection]\n");
+	printf("          [-t (tor connection)]\n");
 	printf("example : %s -h 127.0.0.1 -p 9050 -H 192.168.0.10 -P 443\n", filename);
 	printf("        : %s -h 127.0.0.1 -p 9050 -H foobar.test -P 443\n", filename);
 	printf("        : %s -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0\n", filename);

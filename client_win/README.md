@@ -65,7 +65,7 @@ usage   : client.exe -h listen_ip -p listen_port -H target_socks5server_domainna
           [-d forward proxy authentication(1:basic 2:digest 3:ntlmv2) 4:spnego(kerberos)]
           [-e forward proxy username] [-f forward proxy password] [-g forward proxy user domainname]
           [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]
-          [-t tor connection]
+          [-t (tor connection)]
 example : client.exe -h 127.0.0.1 -p 9050 -H 192.168.0.10 -P 443
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0

@@ -17,9 +17,9 @@ sequenceDiagram
     participant C as nginx server (my socks5 module)
     participant D as destination server (web, ssh, tor, etc.)
     loop 
-        A->>+B: connect
+        A->>+B: connect (TCP)
         A->>+B: socks5 selection request (Socks5)
-        B->>+C: SSL connect (HTTPS)
+        B->>+C: SSL connect (TCP, HTTPS)
         B->>+C: HTTP GET Request (HTTPS)
         C->>C: check HTTP Request Header Key and Value (e.g. socks5: socks5)
         note right of C: if the key and value do not match, do nothing
@@ -37,7 +37,8 @@ sequenceDiagram
         end
         A->>+B: socks5 socks request (Socks5)
         B->>+C: socks5 socks request (Socks5 over TLS)
-        C->>+D: check connection
+        C->>+D: check connection (TCP)
+        D-->>C: 
         C-->>-B: socks5 socks response (Socks5 over TLS)
         B-->>-A: socks5 socks response (Socks5)
         loop until communication ends (forwarder)
@@ -55,6 +56,68 @@ sequenceDiagram
         B-->>-A: 
     end
 ```
+- no forward proxy, tor connection
+```mermaid
+sequenceDiagram
+    participant A as socks5 client
+    participant B as my client
+    participant C as nginx server (my socks5 module)
+    participant D as tor client (e.g. 127.0.0.1:9050)
+    participant E as tor ORs (entry <-> middle <-> exit)
+    participant F as destination server (web, ssh, ...)
+    loop
+        A->>+B: connect (TCP)
+        A->>+B: socks5 selection request (Socks5)
+        B->>+C: SSL connect (TCP, HTTPS)
+        B->>+C: HTTP GET Request (HTTPS)
+        C->>C: check HTTP Request Header Key and Value (e.g. socks5: socks5)
+        note right of C: if the key and value do not match, do nothing
+        C-->>B: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
+        B->>+C: SSL connect (Socks5 over TLS)
+        B->>+C: socks5 selection request (Socks5 over TLS)
+        C-->>-B: socks5 selection response (Socks5 over TLS)
+        B-->>-A: socks5 selection response (Socks5)
+        alt socks5 server authentication method is username/password authentication
+        A->>+B: socks5 username/password authentication request (Socks5)
+        B->>+C: socks5 username/password authentication request (Socks5 over TLS)
+        C->>C: check username and password
+        C-->>-B: socks5 username/password authentication response (Socks5 over TLS)
+        B-->>-A: socks5 username/password authentication response (Socks5)
+        end
+        A->>+B: socks5 socks request (Socks5)
+        B->>+C: socks5 socks request (Socks5 over TLS)
+        C->>+D: connection (TCP)
+        C->>+D: socks5 selection request (Socks5)
+        D-->>-C: socks5 selection response (Socks5)
+        C->>+D: socks5 socks request (Socks5)
+        D->>+E: check connection (encrypt with TLS)
+        E->>+F: check connection (TCP)
+        F-->>E: 
+        E-->>D: 
+        D-->>-C: socks5 socks response (Socks5)
+        C-->>-B: socks5 socks response (Socks5 over TLS)
+        B-->>-A: socks5 socks response (Socks5)
+        loop until communication ends (forwarder)
+            A->>+B: request
+            B->>+C: request (encrypt with TLS)
+            C->>+D: request
+            D->>+E: request (encrypt with TLS)
+            E->>+F: request
+            F-->>-E: response
+            E-->>-D: response (encrypt with TLS)
+            D-->>-C: response
+            C-->>-B: response (encrypt with TLS)
+            B-->>-A: response
+        end
+        F-->>-E: 
+        E-->>-D: 
+        D-->>-C: 
+        C-->>-B: 
+        C-->>-B: HTTP GET Response (HTTPS)
+        C-->>-B: 
+        B-->>-A: 
+    end
+```
 - forward proxy (http)
 ```mermaid
 sequenceDiagram
@@ -64,11 +127,12 @@ sequenceDiagram
     participant D as nginx server (my socks5 module)
     participant E as destination server (web, ssh, tor, etc.)
     loop 
-        A->>+B: connect
+        A->>+B: connect (TCP)
         A->>+B: socks5 selection request (Socks5)
-        B->>+C: HTTP CONNECT Request (HTTP)
+        B->>+C: HTTP CONNECT Request (TCP, HTTP)
         C->>C: User Authentication (no, basic, digest, ntlmv2, spnego(kerberos))
-        C->>+D: check connection
+        C->>+D: check connection (TCP)
+        D-->>C: 
         C-->>B: HTTP CONNECT Response Connection established (HTTP)
         note right of C: TCP Tunnel
         B->>+C: SSL connect (HTTPS)
@@ -98,7 +162,8 @@ sequenceDiagram
         A->>+B: socks5 socks request (Socks5)
         B->>+C: socks5 socks request (Socks5 over TLS)
         C->>+D: socks5 socks request (Socks5 over TLS)
-        D->>+E: check connection
+        D->>+E: check connection (TCP)
+        E-->>D: 
         D-->>-C: socks5 socks response (Socks5 over TLS)
         C-->>-B: socks5 socks response (Socks5 over TLS)
         B-->>-A: socks5 socks response (Socks5)
@@ -124,7 +189,92 @@ sequenceDiagram
         B-->>-A: 
     end
 ```
-
+- forward proxy (http), tor connection
+```mermaid
+sequenceDiagram
+    participant A as socks5 client
+    participant B as my client
+    participant C as forward proxy (squid, ...)
+    participant D as nginx server (my socks5 module)
+    participant E as tor client (e.g. 127.0.0.1:9050)
+    participant F as tor ORs (entry <-> middle <-> exit)
+    participant G as destination server (web, ssh, ...)
+    loop
+        A->>+B: connect (TCP)
+        A->>+B: socks5 selection request (Socks5)
+        B->>+C: HTTP CONNECT Request (TCP, HTTP)
+        C->>C: User Authentication (no, basic, digest, ntlmv2, spnego(kerberos))
+        C->>+D: check connection (TCP)
+        D-->>C: 
+        C-->>B: HTTP CONNECT Response Connection established (HTTP)
+        note right of C: TCP Tunnel
+        B->>+C: SSL connect (HTTPS)
+        C->>+D: SSL connect (HTTPS)
+        B->>+C: HTTP GET Request (HTTPS)
+        C->>+D: HTTP GET Request (HTTPS)
+        D->>D: check HTTP Request Header Key and Value (e.g. socks5: socks5)
+        note right of D: if the key and value do not match, do nothing
+        D-->>C: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
+        C-->>B: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
+        B->>+C: SSL connect (Socks5 over TLS)
+        C->>+D: SSL connect (Socks5 over TLS)
+        B->>+C: socks5 selection request (Socks5 over TLS)
+        C->>+D: socks5 selection request (Socks5 over TLS)
+        D-->>-C: socks5 selection response (Socks5 over TLS)
+        C-->>-B: socks5 selection response (Socks5 over TLS)
+        B-->>-A: socks5 selection response (Socks5)
+        alt socks5 server authentication method is username/password authentication
+        A->>+B: socks5 username/password authentication request (Socks5)
+        B->>+C: socks5 username/password authentication request (Socks5 over TLS)
+        C->>+D: socks5 username/password authentication request (Socks5 over TLS)
+        D->>D: check username and password
+        D-->>-C: socks5 username/password authentication response (Socks5 over TLS)
+        C-->>-B: socks5 username/password authentication response (Socks5 over TLS)
+        B-->>-A: socks5 username/password authentication response (Socks5)
+        end
+        A->>+B: socks5 socks request (Socks5)
+        B->>+C: socks5 socks request (Socks5 over TLS)
+        C->>+D: socks5 socks request (Socks5 over TLS)
+        D->>+E: connection (TCP)
+        D->>+E: socks5 selection request (Socks5)
+        E-->>-D: socks5 selection response (Socks5)
+        D->>+E: socks5 socks request (Socks5)
+        E->>+F: check connection (encrypt with TLS)
+        F->>+G: check connection (TCP)
+        G-->>F: 
+        F-->>E: 
+        E-->>-D: socks5 socks response (Socks5)
+        D-->>-C: socks5 socks response (Socks5 over TLS)
+        C-->>-B: socks5 socks response (Socks5 over TLS)
+        B-->>-A: socks5 socks response (Socks5)
+        loop until communication ends (forwarder)
+            A->>+B: request
+            B->>+C: request (encrypt with TLS)
+            C->>+D: request (encrypt with TLS)
+            D->>+E: request
+            E->>+F: request (encrypt with TLS)
+            F->>+G: request
+            G-->>-F: response
+            F-->>-E: response (encrypt with TLS)
+            E-->>-D: response
+            D-->>-C: response (encrypt with TLS)
+            C-->>-B: response (encrypt with TLS)
+            B-->>-A: response
+        end
+        G-->>-F: 
+        F-->>-E: 
+        E-->>-D: 
+        D-->>-C: 
+        C-->>-B: 
+        D-->>-C: HTTP GET Response (HTTPS)
+        C-->>-B: HTTP GET Response (HTTPS)
+        D-->>-C: 
+        C-->>-B: 
+        D-->>-C: 
+        C-->>-B: 
+        B-->>-A: 
+    end
+```
 
 ## Installation
 ### Install dependencies
@@ -231,7 +381,7 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
               [-d forward proxy authentication(1:basic 2:digest 3:ntlmv2 4:spnego(kerberos))]
               [-e forward proxy username] [-f forward proxy password] [-g forward proxy user domainname]
               [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]
-              [-t tor connection]
+              [-t (tor connection)]
     example : ./client -h 0.0.0.0 -p 9050 -H 192.168.0.10 -P 443
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0
