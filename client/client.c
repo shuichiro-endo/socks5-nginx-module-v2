@@ -4592,10 +4592,10 @@ int main(int argc, char **argv)
 
 	if(tor_connection_flag == 0){
 #ifdef _DEBUG
-		printf("[I] Tor server connection:off\n");
+		printf("[I] Tor client connection:off\n");
 #endif
 	}else{
-		printf("[I] Tor server connection:on\n");
+		printf("[I] Tor client connection:on\n");
 	}
 
 #ifdef _DEBUG
