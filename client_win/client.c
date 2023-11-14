@@ -2881,6 +2881,8 @@ int forward_proxy_authentication_digest(SOCKET forward_proxy_sock, char *target_
 	int rec, sen;
 	int ret = 0;
 	char *pos = NULL;
+	int count = 0;
+	int check = 0;
 
 
 	memcpy(&(digest_param->username), forward_proxy_username, strlen(forward_proxy_username));
@@ -2979,20 +2981,39 @@ int forward_proxy_authentication_digest(SOCKET forward_proxy_sock, char *target_
 #endif
 
 	// HTTP Response (HTTP/1.1 200 Connection established)
-	ZeroMemory(buffer, BUFFER_SIZE+1);
-	rec = recv_data(forward_proxy_sock, buffer, BUFFER_SIZE, tv_sec, tv_usec);
-	if(rec <= 0){
+	count = 0;
+	check = 0;
+	do{
+		count++;
+		ZeroMemory(buffer, BUFFER_SIZE+1);
+		rec = recv_data(forward_proxy_sock, buffer, BUFFER_SIZE, tv_sec, tv_usec);
+		if(rec <= 0){
 #ifdef _DEBUG
-		printf("[E] [server <- fproxy] Recv http response from forward proxy\n");
+			printf("[E] [server <- fproxy] Recv http response from forward proxy\n");
 #endif
-		goto error;
-	}
-#ifdef _DEBUG
-	printf("[I] [server <- fproxy] Recv http response from forward proxy\n");
-#endif
+			goto error;
+		}
 
-	ret = strncmp(buffer, "HTTP/1.1 200 Connection established\r\n", strlen("HTTP/1.1 200 Connection established\r\n"));
-	if(ret != 0){
+		ret = strncmp(buffer, "HTTP/1.1", strlen("HTTP/1.1"));
+		if(ret == 0){
+			check = 1;
+			break;
+		}
+	}while(count < 2);
+
+	if(check == 1){
+		ret = strncmp(buffer, "HTTP/1.1 200 Connection established\r\n", strlen("HTTP/1.1 200 Connection established\r\n"));
+		if(ret == 0){
+#ifdef _DEBUG
+			printf("[I] [server <- fproxy] Recv http response from forward proxy\n");
+#endif
+		}else{
+#ifdef _DEBUG
+			printf("[E] Forward proxy error:\n%s\n", buffer);
+#endif
+			goto error;
+		}
+	}else{
 #ifdef _DEBUG
 		printf("[E] Forward proxy error:\n%s\n", buffer);
 #endif
@@ -3034,6 +3055,8 @@ int forward_proxy_authentication_ntlmv2(SOCKET forward_proxy_sock, char *target_
 	int ntlm_challenge_message_length = 0;
 	int ntlm_authenticate_message_length = 0;
 	char *pos = NULL;
+	int count = 0;
+	int check = 0;
 
 
 	// negotiate_message
@@ -3218,20 +3241,39 @@ int forward_proxy_authentication_ntlmv2(SOCKET forward_proxy_sock, char *target_
 #endif
 
 	// HTTP Response (HTTP/1.1 200 Connection established)
-	ZeroMemory(buffer, BUFFER_SIZE+1);
-	rec = recv_data(forward_proxy_sock, buffer, BUFFER_SIZE, tv_sec, tv_usec);
-	if(rec <= 0){
+	count = 0;
+	check = 0;
+	do{
+		count++;
+		ZeroMemory(buffer, BUFFER_SIZE+1);
+		rec = recv_data(forward_proxy_sock, buffer, BUFFER_SIZE, tv_sec, tv_usec);
+		if(rec <= 0){
 #ifdef _DEBUG
-		printf("[E] [server <- fproxy] Recv http response from forward proxy\n");
+			printf("[E] [server <- fproxy] Recv http response from forward proxy\n");
 #endif
-		goto error;
-	}
-#ifdef _DEBUG
-	printf("[I] [server <- fproxy] Recv http response from forward proxy\n");
-#endif
+			goto error;
+		}
 
-	ret = strncmp(buffer, "HTTP/1.1 200 Connection established\r\n", strlen("HTTP/1.1 200 Connection established\r\n"));
-	if(ret != 0){
+		ret = strncmp(buffer, "HTTP/1.1", strlen("HTTP/1.1"));
+		if(ret == 0){
+			check = 1;
+			break;
+		}
+	}while(count < 2);
+
+	if(check == 1){
+		ret = strncmp(buffer, "HTTP/1.1 200 Connection established\r\n", strlen("HTTP/1.1 200 Connection established\r\n"));
+		if(ret == 0){
+#ifdef _DEBUG
+			printf("[I] [server <- fproxy] Recv http response from forward proxy\n");
+#endif
+		}else{
+#ifdef _DEBUG
+			printf("[E] Forward proxy error:\n%s\n", buffer);
+#endif
+			goto error;
+		}
+	}else{
 #ifdef _DEBUG
 		printf("[E] Forward proxy error:\n%s\n", buffer);
 #endif
@@ -3268,6 +3310,8 @@ int forward_proxy_authentication_spnego(SOCKET forward_proxy_sock, char *target_
 	int rec, sen;
 	int ret = 0;
 	char *pos = NULL;
+	int count = 0;
+	int check = 0;
 
 
 	ret = get_base64_kerberos_token(forward_proxy_spn, b64_kerberos_token, SPNEGO_AUTH_BASE64_KERBEROS_TOKEN_SIZE);
@@ -3358,20 +3402,39 @@ int forward_proxy_authentication_spnego(SOCKET forward_proxy_sock, char *target_
 #endif
 
 	// HTTP Response (HTTP/1.1 200 Connection established)
-	ZeroMemory(buffer, BUFFER_SIZE+1);
-	rec = recv_data(forward_proxy_sock, buffer, BUFFER_SIZE, tv_sec, tv_usec);
-	if(rec <= 0){
+	count = 0;
+	check = 0;
+	do{
+		count++;
+		ZeroMemory(buffer, BUFFER_SIZE+1);
+		rec = recv_data(forward_proxy_sock, buffer, BUFFER_SIZE, tv_sec, tv_usec);
+		if(rec <= 0){
 #ifdef _DEBUG
-		printf("[E] [server <- fproxy] Recv http response from forward proxy\n");
+			printf("[E] [server <- fproxy] Recv http response from forward proxy\n");
 #endif
-		goto error;
-	}
-#ifdef _DEBUG
-	printf("[I] [server <- fproxy] Recv http response from forward proxy\n");
-#endif
+			goto error;
+		}
 
-	ret = strncmp(buffer, "HTTP/1.1 200 Connection established\r\n", strlen("HTTP/1.1 200 Connection established\r\n"));
-	if(ret != 0){
+		ret = strncmp(buffer, "HTTP/1.1", strlen("HTTP/1.1"));
+		if(ret == 0){
+			check = 1;
+			break;
+		}
+	}while(count < 2);
+
+	if(check == 1){
+		ret = strncmp(buffer, "HTTP/1.1 200 Connection established\r\n", strlen("HTTP/1.1 200 Connection established\r\n"));
+		if(ret == 0){
+#ifdef _DEBUG
+			printf("[I] [server <- fproxy] Recv http response from forward proxy\n");
+#endif
+		}else{
+#ifdef _DEBUG
+			printf("[E] Forward proxy error:\n%s\n", buffer);
+#endif
+			goto error;
+		}
+	}else{
 #ifdef _DEBUG
 		printf("[E] Forward proxy error:\n%s\n", buffer);
 #endif
