@@ -407,6 +407,39 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     ```
 
 ## Troubleshooting
+### How to get nginx logs (for socks5 nginx module)
+- server
+    1. modify /etc/nginx/nginx.conf file (set the debug level of the error_log directive)
+    ```
+    ...
+    error_log /var/log/nginx/error.log debug;
+    ...
+    ```
+    2. modify ngx_http_socks5_module.c file (uncomment the following #define preprocessor directive)
+    ```
+    ...
+    #define _DEBUG
+    ...
+    ```
+    3. build my module (dynamic module)
+    ```
+    cd socks5-nginx-module-v2/nginx-x.xx.x
+    ./configure --with-compat --add-dynamic-module=../server --with-ld-opt="-lssl -lcrypto"
+    make modules
+    ```
+    4. copy the module library (.so file) to the nginx modules directory
+    ```
+    sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    ```
+    5. restart nginx server
+    ```
+    sudo systemctl restart nginx
+    ```
+    6. read error.log file
+    ```
+    sudo tail -f /var/log/nginx/error.log
+    ```
+
 ### How to reduce number of connections in CLOSE_WAIT state
 You can check number of connections in CLOSE_WAIT state by running the following command.
 ```
