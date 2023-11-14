@@ -1206,6 +1206,7 @@ int worker(ngx_http_request_t *r, void *ptr)
 				tmp_ipv6 = (struct sockaddr_in6 *)target_host->ai_addr;
 				memcpy(&target_addr6.sin6_addr, &tmp_ipv6->sin6_addr, sizeof(struct in6_addr));
 				memcpy(&target_addr6.sin6_port, &socks_request_domainname->dst_addr[domainname_length], 2);
+				target_addr6.sin6_scope_id = tmp_ipv6->sin6_scope_id;
 				freeaddrinfo(target_host);
 			}else{
 #ifdef _DEBUG

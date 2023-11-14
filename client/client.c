@@ -3567,7 +3567,8 @@ int worker(void *ptr)
 			forward_proxy_addr6.sin6_family = AF_INET6;
 			tmp_ipv6 = (struct sockaddr_in6 *)forward_proxy_host->ai_addr;
 			memcpy(&forward_proxy_addr6.sin6_addr, &tmp_ipv6->sin6_addr, sizeof(struct in6_addr));
-			memcpy(&forward_proxy_addr6.sin6_port, &tmp_ipv6->sin6_port, 2);;
+			memcpy(&forward_proxy_addr6.sin6_port, &tmp_ipv6->sin6_port, 2);
+			forward_proxy_addr6.sin6_scope_id = tmp_ipv6->sin6_scope_id;
 			freeaddrinfo(forward_proxy_host);
 		}else{
 #ifdef _DEBUG
@@ -3599,7 +3600,11 @@ int worker(void *ptr)
 
 			inet_ntop(AF_INET6, &forward_proxy_addr6.sin6_addr, forward_proxy_addr6_string_pointer, INET6_ADDRSTRLEN);
 #ifdef _DEBUG
-			printf("[I] [server -> fproxy] Connecting ip:%s port:%d\n", forward_proxy_addr6_string_pointer, ntohs(forward_proxy_addr6.sin6_port));
+			if(forward_proxy_addr6.sin6_scope_id > 0){
+				printf("[I] [server -> fproxy] Connecting ip:%s%%%d port:%d\n", forward_proxy_addr6_string_pointer, forward_proxy_addr6.sin6_scope_id, ntohs(forward_proxy_addr6.sin6_port));
+			}else{
+				printf("[I] [server -> fproxy] Connecting ip:%s port:%d\n", forward_proxy_addr6_string_pointer, ntohs(forward_proxy_addr6.sin6_port));
+			}
 #endif
 
 			if(err = connect(forward_proxy_sock, (struct sockaddr *)&forward_proxy_addr6, sizeof(forward_proxy_addr6)) < 0){
@@ -3710,7 +3715,8 @@ int worker(void *ptr)
 			target_addr6.sin6_family = AF_INET6;
 			tmp_ipv6 = (struct sockaddr_in6 *)target_host->ai_addr;
 			memcpy(&target_addr6.sin6_addr, &tmp_ipv6->sin6_addr, sizeof(struct in6_addr));
-			memcpy(&target_addr6.sin6_port, &tmp_ipv6->sin6_port, 2);;
+			memcpy(&target_addr6.sin6_port, &tmp_ipv6->sin6_port, 2);
+			target_addr6.sin6_scope_id = tmp_ipv6->sin6_scope_id;
 			freeaddrinfo(target_host);
 		}else{
 #ifdef _DEBUG
@@ -3742,7 +3748,11 @@ int worker(void *ptr)
 
 			inet_ntop(AF_INET6, &target_addr6.sin6_addr, target_addr6_string_pointer, INET6_ADDRSTRLEN);
 #ifdef _DEBUG
-			printf("[I] [server -> target] Connecting ip:%s port:%d\n", target_addr6_string_pointer, ntohs(target_addr6.sin6_port));
+			if(target_addr6.sin6_scope_id > 0){
+				printf("[I] [server -> target] Connecting ip:%s%%%d port:%d\n", target_addr6_string_pointer, target_addr6.sin6_scope_id, ntohs(target_addr6.sin6_port));
+			}else{
+				printf("[I] [server -> target] Connecting ip:%s port:%d\n", target_addr6_string_pointer, ntohs(target_addr6.sin6_port));
+			}
 #endif
 
 			if(err = connect(target_sock, (struct sockaddr *)&target_addr6, sizeof(target_addr6)) < 0){
@@ -4312,7 +4322,7 @@ error:
 
 void usage(char *filename)
 {
-	printf("usage   : %s -h listen_ip -p listen_port -H target_socks5server_domainname -P target_socks5server_https_port\n", filename);
+	printf("usage   : %s -h listen_domainname -p listen_port -H target_socks5server_domainname -P target_socks5server_https_port\n", filename);
 	printf("          [-A recv/send tv_sec(timeout 0-60 sec)] [-B recv/send tv_usec(timeout 0-1000000 microsec)]\n");
 	printf("          [-C forwarder tv_sec(timeout 0-300 sec)] [-D forwarder tv_usec(timeout 0-1000000 microsec)]\n");
 	printf("          [-a forward proxy domainname] [-b forward proxy port] [-c forward proxy(1:http 2:https)]\n");
@@ -4321,9 +4331,9 @@ void usage(char *filename)
 	printf("          [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]\n");
 	printf("          [-t (tor connection)]\n");
 	printf("example : %s -h 0.0.0.0 -p 9050 -H 192.168.0.10 -P 443\n", filename);
-	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443\n", filename);
+	printf("        : %s -h localhost -p 9050 -H foobar.test -P 443\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0\n", filename);
-	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1\n", filename);
+	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a proxy.test.local -b 3128 -c 1\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 1 -e forward_proxy_user -f forward_proxy_password\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 2 -e forward_proxy_user -f forward_proxy_password\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e forward_proxy_user -f forward_proxy_password -g forward_proxy_user_domainname -i forward_proxy_workstationname\n", filename);
@@ -4334,6 +4344,7 @@ void usage(char *filename)
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j HTTP/proxy.test.local@TEST.LOCAL -A 10\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -t -A 10 -C 20\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e test01 -f p@ssw0rd -g test.local -i WORKSTATION -t -A 20 -C 20\n", filename);
+	printf("        : %s -h ::1 -p 9050 -H foobar.test -P 443 -a fe80::xxxx:xxxx:xxxx:xxxx%%eth0 -b 3128 -c 1 -d 3 -e test01 -f p@ssw0rd -g test.local -i WORKSTATION -t -A 20 -C 20\n", filename);
 }
 
 int main(int argc, char **argv)
@@ -4606,59 +4617,194 @@ int main(int argc, char **argv)
 	// ignore SIGPIPE
 	signal(SIGPIPE, SIG_IGN);
 
-	int server_sock, client_sock;
-	struct sockaddr_in server_addr, client_addr;
+	int server_sock = -1;
+	int client_sock = -1;
+	struct sockaddr_in server_addr;
+	struct sockaddr_in client_addr;
+	struct sockaddr_in *tmp_ipv4;
+	struct sockaddr_in6 server_addr6;
+	struct sockaddr_in6 client_addr6;
+	struct sockaddr_in6 *tmp_ipv6;
+	struct addrinfo hints;
+	struct addrinfo *server_host;
 
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_addr.s_addr = inet_addr(socks5_server_ip);
-	server_addr.sin_port = htons(atoi(socks5_server_port));
-	
-	server_sock = socket(AF_INET, SOCK_STREAM, 0);
-	int reuse = 1;
-	setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int));
-	
-	// bind
-	if(bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
-#ifdef _DEBUG
-		printf("[E] bind error\n");
-#endif
-		return -1;
+	char *server_domainname = socks5_server_ip;
+	u_short server_domainname_length = 0;
+	if(server_domainname != NULL){
+		server_domainname_length = strlen(server_domainname);
 	}
-	
-	// listen
-	listen(server_sock, 5);
-#ifdef _DEBUG
-	printf("[I] [client -> server] Listening port %d on %s\n", ntohs(server_addr.sin_port), inet_ntoa(server_addr.sin_addr));
-#endif
+	char *server_port_number = socks5_server_port;
+	char server_addr6_string[INET6_ADDRSTRLEN+1] = {0};
+	char *server_addr6_string_pointer = server_addr6_string;
+	char client_addr6_string[INET6_ADDRSTRLEN+1] = {0};
+	char *client_addr6_string_pointer = client_addr6_string;
+	int client_addr_length = 0;
+	int client_addr6_length = 0;
+	int family = 0;
+	char *colon = NULL;
+	int reuse = 1;
 
-	// accept
-	int client_addr_length = sizeof(client_addr);
-	while((client_sock = accept(server_sock, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_length))){
+	bzero(&server_addr, sizeof(struct sockaddr_in));
+	bzero(&client_addr, sizeof(struct sockaddr_in));
+	bzero(&server_addr6, sizeof(struct sockaddr_in6));
+	bzero(&client_addr6, sizeof(struct sockaddr_in6));
+	bzero(&hints, sizeof(struct addrinfo));
+
+	colon = strstr(server_domainname, ":");	// check ipv6 address
+	if(colon == NULL){	// ipv4 address or domainname
+		hints.ai_family = AF_INET;	// IPv4
+		if(getaddrinfo(server_domainname, server_port_number, &hints, &server_host) != 0){
+			hints.ai_family = AF_INET6;	// IPv6
+			if(getaddrinfo(server_domainname, server_port_number, &hints, &server_host) != 0){
 #ifdef _DEBUG
-		printf("[I] [client <- server] Connected from %s\n", inet_ntoa(client_addr.sin_addr));
+				printf("[E] Cannot resolv the domain name:%s\n", server_domainname);
 #endif
-		disable_blocking_socket(client_sock);	// non blocking
-		
-		pthread_t thread;
-		struct worker_param *worker_param = (struct worker_param *)calloc(1, sizeof(struct worker_param));
-		worker_param->client_sock = client_sock;
-		worker_param->tv_sec = tv_sec;
-		worker_param->tv_usec = tv_usec;
-		worker_param->forwarder_tv_sec = forwarder_tv_sec;
-		worker_param->forwarder_tv_usec = forwarder_tv_usec;
-		
-		if(pthread_create(&thread, NULL, (void *)worker, worker_param))
-		{
+				return -1;
+			}
+		}
+	}else{	// ipv6 address
+		hints.ai_family = AF_INET6;	// IPv6
+		if(getaddrinfo(server_domainname, server_port_number, &hints, &server_host) != 0){
 #ifdef _DEBUG
-			printf("[E] pthread_create failed\n");
+			printf("[E] Cannot resolv the domain name:%s\n", server_domainname);
 #endif
-			close_socket(client_sock);
-		}else{
-			pthread_detach(thread);
+			return -1;
 		}
 	}
 
-	close_socket(server_sock);
+	if(server_host->ai_family == AF_INET){
+		family = AF_INET;
+		server_addr.sin_family = AF_INET;
+		tmp_ipv4 = (struct sockaddr_in *)server_host->ai_addr;
+		memcpy(&server_addr.sin_addr, &tmp_ipv4->sin_addr, sizeof(unsigned long));
+		memcpy(&server_addr.sin_port, &tmp_ipv4->sin_port, 2);
+		freeaddrinfo(server_host);
+	}else if(server_host->ai_family == AF_INET6){
+		family = AF_INET6;
+		server_addr6.sin6_family = AF_INET6;
+		tmp_ipv6 = (struct sockaddr_in6 *)server_host->ai_addr;
+		memcpy(&server_addr6.sin6_addr, &tmp_ipv6->sin6_addr, sizeof(struct in6_addr));
+		memcpy(&server_addr6.sin6_port, &tmp_ipv6->sin6_port, 2);
+		server_addr6.sin6_scope_id = tmp_ipv6->sin6_scope_id;
+		freeaddrinfo(server_host);
+	}else{
+#ifdef _DEBUG
+		printf("[E] Not implemented\n");
+#endif
+		freeaddrinfo(server_host);
+		return -1;
+	}
+
+	if(family == AF_INET){	// IPv4
+		server_sock = socket(AF_INET, SOCK_STREAM, 0);
+		reuse = 1;
+		setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int));
+
+		// bind
+		if(bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
+#ifdef _DEBUG
+			printf("[E] bind error\n");
+#endif
+			return -1;
+		}
+
+		// listen
+		listen(server_sock, 5);
+#ifdef _DEBUG
+		printf("[I] [client -> server] Listening port %d on %s\n", ntohs(server_addr.sin_port), inet_ntoa(server_addr.sin_addr));
+#endif
+
+		// accept
+		client_addr_length = sizeof(client_addr);
+		while((client_sock = accept(server_sock, (struct sockaddr *)&client_addr, (socklen_t *)&client_addr_length))){
+#ifdef _DEBUG
+			printf("[I] [client <- server] Connected from ip:%s port:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+#endif
+			disable_blocking_socket(client_sock);	// non blocking
+
+			pthread_t thread;
+			struct worker_param *worker_param = (struct worker_param *)calloc(1, sizeof(struct worker_param));
+			worker_param->client_sock = client_sock;
+			worker_param->tv_sec = tv_sec;
+			worker_param->tv_usec = tv_usec;
+			worker_param->forwarder_tv_sec = forwarder_tv_sec;
+			worker_param->forwarder_tv_usec = forwarder_tv_usec;
+
+			if(pthread_create(&thread, NULL, (void *)worker, worker_param))
+			{
+#ifdef _DEBUG
+				printf("[E] pthread_create failed\n");
+#endif
+				close_socket(client_sock);
+			}else{
+				pthread_detach(thread);
+			}
+		}
+
+		close_socket(server_sock);
+	}else if(family == AF_INET6){	// IPv6
+		server_sock = socket(AF_INET6, SOCK_STREAM, 0);
+		reuse = 1;
+		setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int));
+
+		// bind
+		if(bind(server_sock, (struct sockaddr *)&server_addr6, sizeof(server_addr6)) == -1) {
+#ifdef _DEBUG
+			printf("[E] bind error\n");
+#endif
+			return -1;
+		}
+
+		// listen
+		listen(server_sock, 5);
+#ifdef _DEBUG
+		inet_ntop(AF_INET6, &server_addr6.sin6_addr, server_addr6_string_pointer, INET6_ADDRSTRLEN);
+		if(server_addr6.sin6_scope_id > 0){
+			printf("[I] [client -> server] Listening port %d on %s%%%d\n", ntohs(server_addr6.sin6_port), server_addr6_string_pointer, server_addr6.sin6_scope_id);
+		}else{
+			printf("[I] [client -> server] Listening port %d on %s\n", ntohs(server_addr6.sin6_port), server_addr6_string_pointer);
+		}
+#endif
+
+		// accept
+		client_addr6_length = sizeof(client_addr6);
+		while((client_sock = accept(server_sock, (struct sockaddr *)&client_addr6, (socklen_t *)&client_addr6_length))){
+#ifdef _DEBUG
+			inet_ntop(AF_INET6, &client_addr6.sin6_addr, client_addr6_string_pointer, INET6_ADDRSTRLEN);
+			if(client_addr6.sin6_scope_id > 0){
+				printf("[I] [client <- server] Connected from ip:%s%%%d port:%d\n", client_addr6_string_pointer, client_addr6.sin6_scope_id, ntohs(client_addr6.sin6_port));
+			}else{
+				printf("[I] [client <- server] Connected from ip:%s port:%d\n", client_addr6_string_pointer, ntohs(client_addr6.sin6_port));
+			}
+#endif
+			disable_blocking_socket(client_sock);	// non blocking
+
+			pthread_t thread;
+			struct worker_param *worker_param = (struct worker_param *)calloc(1, sizeof(struct worker_param));
+			worker_param->client_sock = client_sock;
+			worker_param->tv_sec = tv_sec;
+			worker_param->tv_usec = tv_usec;
+			worker_param->forwarder_tv_sec = forwarder_tv_sec;
+			worker_param->forwarder_tv_usec = forwarder_tv_usec;
+
+			if(pthread_create(&thread, NULL, (void *)worker, worker_param))
+			{
+#ifdef _DEBUG
+				printf("[E] pthread_create failed\n");
+#endif
+				close_socket(client_sock);
+			}else{
+				pthread_detach(thread);
+			}
+		}
+
+		close_socket(server_sock);
+	}else{
+#ifdef _DEBUG
+		printf("[E] Not implemented\n");
+#endif
+		return -1;
+	}
 
 	// unload OSSL_PROVIDER legacy, default
 	OSSL_PROVIDER_unload(legacy);

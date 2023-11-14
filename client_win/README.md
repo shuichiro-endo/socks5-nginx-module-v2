@@ -30,11 +30,11 @@ copy yyy.crt socks5-nginx-module-v2/client_win/server_socks5.crt
 ```
 5. modify client.c file (if you change the certificate filename or directory path)
 ```
-char server_certificate_filename_https[256] = "server_https.crt";	// server certificate filename (HTTPS)
-char server_certificate_file_directory_path_https[256] = ".";	// server certificate file directory path (HTTPS)
+char server_certificate_filename_https[256] = "server_https.crt";   // server certificate filename (HTTPS)
+char server_certificate_file_directory_path_https[256] = ".";       // server certificate file directory path (HTTPS)
 
-char server_certificate_filename_socks5[256] = "server_socks5.crt";	// server certificate filename (Socks5 over TLS)
-char server_certificate_file_directory_path_socks5[256] = ".";	// server certificate file directory path (Socks5 over TLS)
+char server_certificate_filename_socks5[256] = "server_socks5.crt"; // server certificate filename (Socks5 over TLS)
+char server_certificate_file_directory_path_socks5[256] = ".";      // server certificate file directory path (Socks5 over TLS)
 ```
 6. build
 ```
@@ -50,15 +50,13 @@ copy "C:\Program Files\OpenSSL\bin\libssl-3-x64.dll" .
 
 ## Usage
 1. run command prompt
-
 2. change code page of command prompt (UTF-8)
 ```
 chcp 65001
 ```
-
 3. run my client
 ```
-usage   : client.exe -h listen_ip -p listen_port -H target_socks5server_domainname -P target_socks5server_https_port
+usage   : client.exe -h listen_domainname -p listen_port -H target_socks5server_domainname -P target_socks5server_https_port
           [-A recv/send tv_sec(timeout 0-60 sec)] [-B recv/send tv_usec(timeout 0-1000000 microsec)]
           [-C forwarder tv_sec(timeout 0-300 sec)] [-D forwarder tv_usec(timeout 0-1000000 microsec)]
           [-a forward proxy domainname] [-b forward proxy port] [-c forward proxy(1:http 2:https)]
@@ -67,9 +65,9 @@ usage   : client.exe -h listen_ip -p listen_port -H target_socks5server_domainna
           [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]
           [-t (tor connection)]
 example : client.exe -h 127.0.0.1 -p 9050 -H 192.168.0.10 -P 443
-        : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443
+        : client.exe -h localhost -p 9050 -H foobar.test -P 443
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0
-        : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1
+        : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a proxy.test.local -b 3128 -c 1
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 1 -e forward_proxy_user -f forward_proxy_password
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 2 -e forward_proxy_user -f forward_proxy_password
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e forward_proxy_user -f forward_proxy_password -g forward_proxy_user_domainname -i forward_proxy_workstationname
@@ -80,4 +78,5 @@ example : client.exe -h 127.0.0.1 -p 9050 -H 192.168.0.10 -P 443
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j HTTP/proxy.test.local@TEST.LOCAL -A 10
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -t -A 10 -C 20
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e test01 -f p@ssw0rd -g test.local -i WORKSTATION -t -A 20 -C 20
+        : client.exe -h ::1 -p 9050 -H foobar.test -P 443 -a fe80::xxxx:xxxx:xxxx:xxxx%14 -b 3128 -c 1 -d 3 -e test01 -f p@ssw0rd -g test.local -i WORKSTATION -t -A 20 -C 20
 ```

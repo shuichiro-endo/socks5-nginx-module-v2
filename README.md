@@ -374,7 +374,7 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
 
     2. run my client
     ```
-    usage   : ./client -h listen_ip -p listen_port -H target_socks5server_domainname -P target_socks5server_https_port
+    usage   : ./client -h listen_domainname -p listen_port -H target_socks5server_domainname -P target_socks5server_https_port
               [-A recv/send tv_sec(timeout 0-60 sec)] [-B recv/send tv_usec(timeout 0-1000000 microsec)]
               [-C forwarder tv_sec(timeout 0-300 sec)] [-D forwarder tv_usec(timeout 0-1000000 microsec)]
               [-a forward proxy domainname] [-b forward proxy port] [-c forward proxy(1:http 2:https)]
@@ -383,9 +383,9 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
               [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]
               [-t (tor connection)]
     example : ./client -h 0.0.0.0 -p 9050 -H 192.168.0.10 -P 443
-            : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443
+            : ./client -h localhost -p 9050 -H foobar.test -P 443
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0
-            : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1
+            : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a proxy.test.local -b 3128 -c 1
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 1 -e forward_proxy_user -f forward_proxy_password
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 2 -e forward_proxy_user -f forward_proxy_password
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e forward_proxy_user -f forward_proxy_password -g forward_proxy_user_domainname -i forward_proxy_workstationname
@@ -396,6 +396,7 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 4 -j HTTP/proxy.test.local@TEST.LOCAL -A 10
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -t -A 10 -C 20
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e test01 -f p@ssw0rd -g test.local -i WORKSTATION -t -A 20 -C 20
+            : ./client -h ::1 -p 9050 -H foobar.test -P 443 -a fe80::xxxx:xxxx:xxxx:xxxx%eth0 -b 3128 -c 1 -d 3 -e test01 -f p@ssw0rd -g test.local -i WORKSTATION -t -A 20 -C 20
     ```
     Note: The forward proxy (2:https) connection is an experimental function.
     
