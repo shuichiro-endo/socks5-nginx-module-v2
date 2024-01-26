@@ -248,7 +248,7 @@ void disable_blocking_bio(ngx_http_request_t *r, BIO *bio)	// non blocking
 	ret = BIO_set_nbio(bio, n);
 	if(ret <= 1){
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] disable_blocking_bio error:%d\n", ret);
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] disable_blocking_bio error:%d", ret);
 #endif
 	}
 
@@ -859,7 +859,7 @@ int bio_do_handshake_non_blocking(ngx_http_request_t *r, int sock, BIO *bio, lon
 
 		if(select(nfds, &readfds, &writefds, NULL, &tv) == 0){
 #ifdef _DEBUG
-			printf("[I] bio_do_handshake_non_blocking select timeout\n");
+			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] bio_do_handshake_non_blocking select timeout");
 #endif
 			return -1;
 		}
