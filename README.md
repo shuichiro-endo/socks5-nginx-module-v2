@@ -24,6 +24,7 @@ sequenceDiagram
         C->>C: check HTTP Request Header Key and Value (e.g. socks5: socks5)
         note right of C: if the key and value do not match, do nothing
         C-->>B: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
+        B->>B: check SOCKS5_CHECK_MESSAGE
         B->>+C: SSL connect (Socks5 over TLS)
         B->>+C: socks5 selection request (Socks5 over TLS)
         C-->>-B: socks5 selection response (Socks5 over TLS)
@@ -73,6 +74,7 @@ sequenceDiagram
         C->>C: check HTTP Request Header Key and Value (e.g. socks5: socks5)
         note right of C: if the key and value do not match, do nothing
         C-->>B: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
+        B->>B: check SOCKS5_CHECK_MESSAGE
         B->>+C: SSL connect (Socks5 over TLS)
         B->>+C: socks5 selection request (Socks5 over TLS)
         C-->>-B: socks5 selection response (Socks5 over TLS)
@@ -143,6 +145,7 @@ sequenceDiagram
         note right of D: if the key and value do not match, do nothing
         D-->>C: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
         C-->>B: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
+        B->>B: check SOCKS5_CHECK_MESSAGE
         B->>+C: SSL connect (Socks5 over TLS)
         C->>+D: SSL connect (Socks5 over TLS)
         B->>+C: socks5 selection request (Socks5 over TLS)
@@ -216,6 +219,7 @@ sequenceDiagram
         note right of D: if the key and value do not match, do nothing
         D-->>C: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
         C-->>B: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
+        B->>B: check SOCKS5_CHECK_MESSAGE
         B->>+C: SSL connect (Socks5 over TLS)
         C->>+D: SSL connect (Socks5 over TLS)
         B->>+C: socks5 selection request (Socks5 over TLS)
@@ -536,6 +540,37 @@ $ ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d
 [I] Forwarder
 [I] forwarder_bio recv error:0
 [I] Worker exit
+```
+
+### Forward proxy authentication (4:spnego(kerberos))
+If you receive the following error message, you may not have a ticket (TGT).
+```
+[E] gss_init_sec_context error:
+An unsupported mechanism was requested.
+The routine must be called again to complete its function.
+An invalid status code was supplied.
+An invalid status code was supplied.
+An invalid status code was supplied.
+An invalid status code was supplied.
+An invalid status code was supplied.
+[E] get_base64_kerberos_token error
+[E] forward_proxy_authentication_spnego error
+```
+You need to get a ticket (TGT) as follows.
+```
+> klist
+klist: No credentials cache found (filename: /tmp/krb5cc_1000)
+
+> kinit test02@TEST.LOCAL
+Password for test02@TEST.LOCAL:
+
+> klist
+Ticket cache: FILE:/tmp/krb5cc_1000
+Default principal: test02@TEST.LOCAL
+
+Valid starting       Expires              Service principal
+01/26/2024 03:59:36  01/26/2024 13:59:36  krbtgt/TEST.LOCAL@TEST.LOCAL
+	renew until 01/27/2024 03:59:33
 ```
 
 ## Notes
