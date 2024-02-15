@@ -3388,7 +3388,7 @@ int forward_proxy_authentication_spnego(int forward_proxy_sock, char *target_dom
 
 	if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
 		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT %s:%s HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
-	}else{	// no ipv6 address
+	}else{	// ipv6 address
 		http_request_length = snprintf(http_request, BUFFER_SIZE+1, "CONNECT [%s]:%s HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nProxy-Connection: Keep-Alive\r\n\r\n", target_domainname, target_port_number, target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE);
 	}
 
