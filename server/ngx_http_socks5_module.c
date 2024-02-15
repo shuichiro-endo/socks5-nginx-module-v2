@@ -2111,24 +2111,10 @@ static ngx_int_t ngx_http_socks5_header_filter(ngx_http_request_t *r)
 	ngx_ssl_connection_t *sc = NULL;
 	SSL *client_ssl_http = NULL;
 	BIO *client_bio_http = NULL;
-
-	if(r->connection->ssl != NULL){	// HTTPS
-		sc = r->connection->ssl;
-		client_ssl_http = sc->connection;
-		if(client_ssl_http == NULL){
-#ifdef _DEBUG
-			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] client_ssl_http is NULL");
-#endif
-			goto error;
-		}
-	}else{	// HTTP
-		return ngx_http_next_header_filter(r);
-	}
-
 	SSL_CTX *client_ctx_socks5 = NULL;
 	SSL *client_ssl_socks5 = NULL;
 	BIO *client_bio_socks5 = NULL;
-	
+
 	struct worker_param worker_param;
 	long tv_sec = 3;	// recv send
 	long tv_usec = 0;	// recv send
@@ -2143,7 +2129,20 @@ static ngx_int_t ngx_http_socks5_header_filter(ngx_http_request_t *r)
 	BIO *bio = NULL;
 	EVP_PKEY *s_privatekey_socks5 = NULL;
 	X509 *s_cert_socks5 = NULL;
-	
+
+
+	if(r->connection->ssl != NULL){	// HTTPS
+		sc = r->connection->ssl;
+		client_ssl_http = sc->connection;
+		if(client_ssl_http == NULL){
+#ifdef _DEBUG
+			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] client_ssl_http is NULL");
+#endif
+			return ngx_http_next_header_filter(r);
+		}
+	}else{	// HTTP
+		return ngx_http_next_header_filter(r);
+	}
 
 	// search header
 	h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_SOCKS5_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_SOCKS5_KEY)));
