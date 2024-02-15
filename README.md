@@ -409,6 +409,7 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     proxychains4 curl -v https://www.google.com
     curl -v -x socks5h://127.0.0.1:9050 https://www.google.com
     curl -v -x socks5h://127.0.0.1:9050 https://check.torproject.org/api/ip
+    curl -v -x socks5h://127.0.0.1:9050 https://duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion
     ```
 
 ## Troubleshooting
