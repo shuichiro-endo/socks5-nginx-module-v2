@@ -87,14 +87,11 @@ int tor_connection_flag = 0;	// 0:off 1:on
 int forward_proxy_flag = 0;		// 0:no 1:http 2:https
 int forward_proxy_authentication_flag = 0;	// 0:no 1:basic 2:digest 3:ntlmv2 4:spnego(kerberos)
 
-char forward_proxy_certificate_filename_https[256] = "forward_proxy_https.crt";	// forward proxy certificate filename (HTTPS)
-char forward_proxy_certificate_file_directory_path_https[256] = ".";	// forward proxy certificate file directory path (HTTPS)
+char forward_proxy_certificate_filename_https[256] = "./forward_proxy_https.crt";	// forward proxy certificate filename (HTTPS)
 
-char server_certificate_filename_https[256] = "server_https.crt";	// server certificate filename (HTTPS)
-char server_certificate_file_directory_path_https[256] = ".";	// server certificate file directory path (HTTPS)
+char server_certificate_filename_https[256] = "./server_https.crt";	// server certificate filename (HTTPS)
 
-char server_certificate_filename_socks5[256] = "server_socks5.crt";	// server certificate filename (Socks5 over TLS)
-char server_certificate_file_directory_path_socks5[256] = ".";	// server certificate file directory path (Socks5 over TLS)
+char server_certificate_filename_socks5[256] = "./server_socks5.crt";	// server certificate filename (Socks5 over TLS)
 
 
 void print_bytes(unsigned char *input, int input_length)
@@ -3875,8 +3872,22 @@ int worker(void *ptr)
 			goto error;
 		}
 
-		SSL_CTX_set_default_verify_paths(target_ctx_http);
-		SSL_CTX_load_verify_locations(target_ctx_http, server_certificate_filename_https, server_certificate_file_directory_path_https);
+		ret = SSL_CTX_set_default_verify_paths(target_ctx_http);
+		if(ret == 0){
+#ifdef _DEBUG
+			printf("[E] SSL_CTX_set_default_verify_paths error\n");
+#endif
+			goto error;
+		}
+
+		ret = SSL_CTX_load_verify_locations(target_ctx_http, server_certificate_filename_https, NULL);
+		if(ret == 0){
+#ifdef _DEBUG
+			printf("[E] SSL_CTX_load_verify_locations error\n");
+#endif
+			goto error;
+		}
+
 		SSL_CTX_set_verify(target_ctx_http, SSL_VERIFY_PEER, NULL);
 
 		target_ssl_http = SSL_new(target_ctx_http);
@@ -3936,8 +3947,22 @@ int worker(void *ptr)
 			goto error;
 		}
 
-		SSL_CTX_set_default_verify_paths(target_ctx_http);
-		SSL_CTX_load_verify_locations(target_ctx_http, forward_proxy_certificate_filename_https, forward_proxy_certificate_file_directory_path_https);
+		ret = SSL_CTX_set_default_verify_paths(target_ctx_http);
+		if(ret == 0){
+#ifdef _DEBUG
+			printf("[E] SSL_CTX_set_default_verify_paths error\n");
+#endif
+			goto error;
+		}
+
+		ret = SSL_CTX_load_verify_locations(target_ctx_http, forward_proxy_certificate_filename_https, NULL);
+		if(ret == 0){
+#ifdef _DEBUG
+			printf("[E] SSL_CTX_load_verify_locations error\n");
+#endif
+			goto error;
+		}
+
 		SSL_CTX_set_verify(target_ctx_http, SSL_VERIFY_PEER, NULL);
 //		SSL_CTX_set_verify(target_ctx_http, SSL_VERIFY_NONE, NULL);
 
@@ -3997,8 +4022,22 @@ int worker(void *ptr)
 			goto error;
 		}
 
-		SSL_CTX_set_default_verify_paths(target_ctx_http);
-		SSL_CTX_load_verify_locations(target_ctx_http, server_certificate_filename_https, server_certificate_file_directory_path_https);
+		ret = SSL_CTX_set_default_verify_paths(target_ctx_http);
+		if(ret == 0){
+#ifdef _DEBUG
+			printf("[E] SSL_CTX_set_default_verify_paths error\n");
+#endif
+			goto error;
+		}
+
+		ret = SSL_CTX_load_verify_locations(target_ctx_http, server_certificate_filename_https, NULL);
+		if(ret == 0){
+#ifdef _DEBUG
+			printf("[E] SSL_CTX_load_verify_locations error\n");
+#endif
+			goto error;
+		}
+
 		SSL_CTX_set_verify(target_ctx_http, SSL_VERIFY_PEER, NULL);
 
 		target_ssl_http = SSL_new(target_ctx_http);
@@ -4117,8 +4156,22 @@ int worker(void *ptr)
 		goto error;
 	}
 
-	SSL_CTX_set_default_verify_paths(target_ctx_socks5);
-	SSL_CTX_load_verify_locations(target_ctx_socks5, server_certificate_filename_socks5, server_certificate_file_directory_path_socks5);
+	ret = SSL_CTX_set_default_verify_paths(target_ctx_socks5);
+	if(ret == 0){
+#ifdef _DEBUG
+		printf("[E] SSL_CTX_set_default_verify_paths error\n");
+#endif
+		goto error;
+	}
+
+	ret = SSL_CTX_load_verify_locations(target_ctx_socks5, server_certificate_filename_socks5, NULL);
+	if(ret == 0){
+#ifdef _DEBUG
+		printf("[E] SSL_CTX_load_verify_locations error\n");
+#endif
+		goto error;
+	}
+
 	SSL_CTX_set_verify(target_ctx_socks5, SSL_VERIFY_PEER, NULL);
 
 	target_bio_socks5 = BIO_new_ssl(target_ctx_socks5, 1);	// client mode

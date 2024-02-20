@@ -30,11 +30,9 @@ copy yyy.crt socks5-nginx-module-v2/client_win/server_socks5.crt
 ```
 5. modify client.c file (if you change the certificate filename or directory path)
 ```
-char server_certificate_filename_https[256] = "server_https.crt";   // server certificate filename (HTTPS)
-char server_certificate_file_directory_path_https[256] = ".";       // server certificate file directory path (HTTPS)
+char server_certificate_filename_https[256] = ".\\server_https.crt";    // server certificate filename (HTTPS)
 
-char server_certificate_filename_socks5[256] = "server_socks5.crt"; // server certificate filename (Socks5 over TLS)
-char server_certificate_file_directory_path_socks5[256] = ".";      // server certificate file directory path (Socks5 over TLS)
+char server_certificate_filename_socks5[256] = ".\\server_socks5.crt";  // server certificate filename (Socks5 over TLS)
 ```
 6. build
 ```
