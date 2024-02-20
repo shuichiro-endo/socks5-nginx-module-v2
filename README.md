@@ -574,6 +574,7 @@ Valid starting       Expires              Service principal
 
 ## Notes
 ### How to change HTTP Request Header Key and Value
+Note: There are characters that cannot be used in the HTTP Request Header Key or Value.
 - server
     1. modify ngx_http_socks5_module.c file
     ```
@@ -743,9 +744,9 @@ Valid starting       Expires              Service principal
     ```
 
 - client
-    1. copy server.crt file to my client directory
+    1. copy server_socks5.crt file to my client directory
     ```
-    cp server.crt socks5-nginx-module-v2/client/server_socks5.crt
+    cp server_socks5.crt socks5-nginx-module-v2/client/server_socks5.crt
     ```
     2. modify client.c file (if you change the certificate filename or directory path)
     ```
