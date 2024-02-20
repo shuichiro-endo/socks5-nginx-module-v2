@@ -386,7 +386,7 @@ int recv_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer, int l
 					continue;
 				}else{
 #ifdef _DEBUG
-					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] BIO_read error:%d", rec);
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] BIO_read error:%d:%s", rec, ERR_error_string(ERR_peek_last_error(), NULL));
 #endif
 					return -1;
 				}
@@ -529,7 +529,7 @@ int send_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer, int l
 					continue;
 				}else{
 #ifdef _DEBUG
-					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] BIO_write error:%d", sen);
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] BIO_write error:%d:%s", sen, ERR_error_string(ERR_peek_last_error(), NULL));
 #endif
 					return -1;
 				}
@@ -874,7 +874,7 @@ int bio_do_handshake_non_blocking(ngx_http_request_t *r, int sock, BIO *bio, lon
 					usleep(5000);
 				}else{
 #ifdef _DEBUG
-					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] BIO_should_retry error");
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] BIO_do_handshake error:%s", ERR_error_string(ERR_peek_last_error(), NULL));
 #endif
 					return -1;
 				}

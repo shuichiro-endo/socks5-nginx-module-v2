@@ -2344,7 +2344,7 @@ int recv_data_bio(int sock, BIO *bio, void *buffer, int length, long tv_sec, lon
 					continue;
 				}else{
 #ifdef _DEBUG
-					printf("[E] BIO_read error:%d\n", rec);
+					printf("[E] BIO_read error:%d:%s\n", rec, ERR_error_string(ERR_peek_last_error(), NULL));
 #endif
 					return -1;
 				}
@@ -2487,7 +2487,7 @@ int send_data_bio(int sock, BIO *bio, void *buffer, int length, long tv_sec, lon
 					continue;
 				}else{
 #ifdef _DEBUG
-					printf("[E] BIO_write error:%d\n", sen);
+					printf("[E] BIO_write error:%d:%s\n", sen, ERR_error_string(ERR_peek_last_error(), NULL));
 #endif
 					return -1;
 				}
@@ -2730,7 +2730,7 @@ int bio_do_handshake_non_blocking(int sock, BIO *bio, long tv_sec, long tv_usec)
 					usleep(5000);
 				}else{
 #ifdef _DEBUG
-					printf("[E] BIO_should_retry error\n");
+					printf("[E] BIO_do_handshake error:%s\n", ERR_error_string(ERR_peek_last_error(), NULL));
 #endif
 					return -1;
 				}
