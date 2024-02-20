@@ -504,7 +504,7 @@ Therefore, the username must be converted manually.
 username:àéîõüåç       -> aeiouac
 password:pàßßw0rð@
 
-$ ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e aeiouac -f pàßßw0rð@ -g test.local -i WORKSTATION -A 10
+> ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -a 127.0.0.1 -b 3128 -c 1 -d 3 -e aeiouac -f pàßßw0rð@ -g test.local -i WORKSTATION -A 10
 [I] Forward proxy connection:http
 [I] Forward proxy authentication:ntlmv2
 [I] Forward proxy username:aeiouac
@@ -804,7 +804,7 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     openssl req -x509 -days 3650 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -subj /CN=localhost -outform PEM -keyout client_socks5_private.key -out client_socks5.crt
     openssl x509 -text -noout -in client_socks5.crt
     ```
-    2. copy the server privatekey and certificate
+    2. copy the client privatekey and certificate
     ```
     cat client_socks5_private.key | sed -e 's/^/"/g' -e 's/$/\\n"\\/g' -e 's/"-----END PRIVATE KEY-----\\n"\\/"-----END PRIVATE KEY-----\\n";/g'
     cat client_socks5.crt | sed -e 's/^/"/g' -e 's/$/\\n"\\/g' -e 's/"-----END CERTIFICATE-----\\n"\\/"-----END CERTIFICATE-----\\n";/g'
