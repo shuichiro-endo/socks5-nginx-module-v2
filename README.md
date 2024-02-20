@@ -357,9 +357,8 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     ```
     2. modify client.c file (if you change the certificate filename or directory path)
     ```
-    char server_certificate_filename_https[256] = "./server_https.crt";     // server certificate filename (HTTPS)
-    
-    char server_certificate_filename_socks5[256] = "./server_socks5.crt";   // server certificate filename (Socks5 over TLS)
+    static char server_certificate_filename_https[256] = "./server_https.crt";     // server certificate filename (HTTPS)
+    static char server_certificate_filename_socks5[256] = "./server_socks5.crt";   // server certificate filename (Socks5 over TLS)
     ```
     3. build
     ```
@@ -755,7 +754,7 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     ```
     2. modify client.c file (if you change the certificate filename or directory path)
     ```
-    char server_certificate_filename_socks5[256] = "./server_socks5.crt";   // server certificate filename (Socks5 over TLS)
+    static char server_certificate_filename_socks5[256] = "./server_socks5.crt";   // server certificate filename (Socks5 over TLS)
     ```
     3. build (if you change the certificate filename or directory path)
     ```
@@ -779,8 +778,8 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     ```
     3. modify ngx_http_socks5_module.c file
     ```
-    char cipher_suite_tls_1_2[1000] = "AESGCM+ECDSA:CHACHA20+ECDSA:+AES256";                                        // TLS1.2
-    char cipher_suite_tls_1_3[1000] = "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256"; // TLS1.3
+    static char cipher_suite_tls_1_2[1000] = "AESGCM+ECDSA:CHACHA20+ECDSA:+AES256";                                        // TLS1.2
+    static char cipher_suite_tls_1_3[1000] = "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256"; // TLS1.3
     ```
     4. build my module (dynamic module)
     ```
@@ -845,8 +844,8 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     ```
     2. modify ngx_http_socks5_module.c file
     ```
-    int socks5_over_tls_client_certificate_authentication_flag = 1;	// 0:off 1:on
-    char client_certificate_filename_socks5[256] = "/etc/nginx/certs/client_socks5.crt";	// client certificate filename (Socks5 over TLS)
+    static int socks5_over_tls_client_certificate_authentication_flag = 1;	// 0:off 1:on
+    static char client_certificate_filename_socks5[256] = "/etc/nginx/certs/client_socks5.crt";	// client certificate filename (Socks5 over TLS)
     ```
     3. build my module (dynamic module)
     ```
@@ -867,9 +866,9 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
 - server
     1. modify ngx_http_socks5_module.c file
     ```
-    char tor_client_ip[256] = "127.0.0.1";
-    char tor_client_ip_atyp = 0x1;		// ipv4:0x1 domainname:0x3 ipv6:0x4
-    uint16_t tor_client_port = 9050;
+    static char tor_client_ip[256] = "127.0.0.1";
+    static char tor_client_ip_atyp = 0x1;		// ipv4:0x1 domainname:0x3 ipv6:0x4
+    static uint16_t tor_client_port = 9050;
     ```
     2. build my module(dynamic module)
     ```

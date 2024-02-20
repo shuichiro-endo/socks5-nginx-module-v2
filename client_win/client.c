@@ -75,34 +75,81 @@
 
 #define SOCKS5_CHECK_MESSAGE "socks5 ok"
 
-int optstringIndex = 0;
-char *optarg = NULL;
+static int optstringIndex = 0;
+static char *optarg = NULL;
 
-char *socks5_server_ip = NULL;
-char *socks5_server_port = NULL;
-char *socks5_target_ip = NULL;
-char *socks5_target_port = NULL;
-char *forward_proxy_ip = NULL;		// http proxy ip
-char *forward_proxy_port = NULL;	// http proxy port
-char *forward_proxy_username = NULL;
-char *forward_proxy_password = NULL;
-char *forward_proxy_user_domainname = NULL;
-char *forward_proxy_workstationname = NULL;
-char *forward_proxy_spn = NULL;	// service principal name
-char *forward_proxy_nthash_hexstring = NULL;	// nthash hexstring
-int tor_connection_flag = 0;	// 0:off 1:on
-int forward_proxy_flag = 0;		// 0:no 1:http 2:https
-int forward_proxy_authentication_flag = 0;	// 0:no 1:basic 2:digest 3:ntlmv2 4:spnego(kerberos)
-int socks5_over_tls_client_certificate_authentication_flag = 0;	// 0:off 1:on
+static char *socks5_server_ip = NULL;
+static char *socks5_server_port = NULL;
+static char *socks5_target_ip = NULL;
+static char *socks5_target_port = NULL;
+static char *forward_proxy_ip = NULL;		// http proxy ip
+static char *forward_proxy_port = NULL;	// http proxy port
+static char *forward_proxy_username = NULL;
+static char *forward_proxy_password = NULL;
+static char *forward_proxy_user_domainname = NULL;
+static char *forward_proxy_workstationname = NULL;
+static char *forward_proxy_spn = NULL;	// service principal name
+static char *forward_proxy_nthash_hexstring = NULL;	// nthash hexstring
+static int tor_connection_flag = 0;	// 0:off 1:on
+static int forward_proxy_flag = 0;		// 0:no 1:http 2:https
+static int forward_proxy_authentication_flag = 0;	// 0:no 1:basic 2:digest 3:ntlmv2 4:spnego(kerberos)
+static int socks5_over_tls_client_certificate_authentication_flag = 0;	// 0:off 1:on
 
-char forward_proxy_certificate_filename_https[256] = ".\\forward_proxy_https.crt";	// forward proxy certificate filename (HTTPS)
-
-char server_certificate_filename_https[256] = ".\\server_https.crt";	// server certificate filename (HTTPS)
-
-char server_certificate_filename_socks5[256] = ".\\server_socks5.crt";	// server certificate filename (Socks5 over TLS)
+static char forward_proxy_certificate_filename_https[256] = ".\\forward_proxy_https.crt";	// forward proxy certificate filename (HTTPS)
+static char server_certificate_filename_https[256] = ".\\server_https.crt";	// server certificate filename (HTTPS)
+static char server_certificate_filename_socks5[256] = ".\\server_socks5.crt";	// server certificate filename (Socks5 over TLS)
 
 
-void print_bytes(unsigned char *input, int input_length)
+static void print_bytes(unsigned char *input, int input_length);
+static int encrypt_aes(unsigned char *plaintext, int plaintext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *ciphertext);
+static int decrypt_aes(unsigned char *ciphertext, int ciphertext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *plaintext);
+static int encode_base64(const unsigned char *input, int length, unsigned char *output, int output_size);
+static int decode_base64(const unsigned char *input, int length, unsigned char *output, int output_size);
+static int get_md5_hash(const unsigned char *input, int input_length, unsigned char *output, int output_size);
+static int get_sha_256_hash(const unsigned char *input, int input_length, unsigned char *output, int output_size);
+static int get_sha_512_256_hash(const unsigned char *input, int input_length, unsigned char *output, int output_size);
+static int get_http_header(const char *input, const char *key, char *output, int output_size);
+static int get_digest_values(const char *input, digest_parameters *param);
+static int get_digest_response(digest_parameters *param);
+static int encrypt_des_ecb(unsigned char *plaintext, int plaintext_length, unsigned char *key, unsigned char *ciphertext);
+static int get_md4_hash(const unsigned char *input, int input_length, unsigned char *output, int output_size);
+static int get_hmac_md5(const unsigned char *input, int input_length, const unsigned char *key, int key_length, unsigned char *output, int output_size);
+static int get_upper_string(const char *input, int input_length, char *output);
+static int get_number_of_bytes_of_utf16_string(char *input);
+static int convert_utf8_to_utf16(const char *input, char *output, int output_size);
+static int get_av_pair_value(struct challenge_message *challenge_message, uint16_t av_id, unsigned char *data, int data_size);
+static char hex_char_to_int(char c);
+static int hexstring_to_array(char *hexstring, int hexstring_length, unsigned char *output, int output_size);
+static int ntowfv2(const char *user, const char *password, const char *userdom, unsigned char *output, int output_size);
+static int lmowfv2(const char *user, const char *password, const char *userdom, unsigned char *output, int output_size);
+static int generate_response_ntlmv2(struct challenge_message *challenge_message, struct authenticate_message *authenticate_message);
+static int get_base64_kerberos_token(char *spn, char *b64_kerberos_token, int b64_kerberos_token_size);
+static int gettimeofday(timeval *tv, timezone *tz);
+static void enable_blocking_socket(SOCKET sock);	// blocking
+static void disable_blocking_socket(SOCKET sock);	// non blocking
+static void enable_blocking_bio(BIO *bio);		// blocking
+static void disable_blocking_bio(BIO *bio);	// non blocking
+static int recv_data(SOCKET sock, void *buffer, int length, long tv_sec, long tv_usec);
+static int recv_data_bio(SOCKET sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec);
+static int send_data(SOCKET sock, void *buffer, int length, long tv_sec, long tv_usec);
+static int send_data_bio(SOCKET sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec);
+static int forwarder_bio(SOCKET client_sock, SOCKET target_sock, BIO *target_bio, long tv_sec, long tv_usec);
+static int ssl_connect_non_blocking(SOCKET sock, SSL *ssl, long tv_sec, long tv_usec);
+static int bio_do_handshake_non_blocking(SOCKET sock, BIO *bio, long tv_sec, long tv_usec);
+static void fini_ssl(ssl_param *param);
+static void close_socket(SOCKET sock);
+static int forward_proxy_authentication_no(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec);
+static int forward_proxy_authentication_basic(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec);
+static int forward_proxy_authentication_digest(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec);
+static int forward_proxy_authentication_ntlmv2(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec);
+static int forward_proxy_authentication_spnego(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec);
+static int worker(void *ptr);
+static void worker_thread(void *ptr);
+static void usage(char *filename);
+static int getopt(int argc, char **argv, char *optstring);
+
+
+static void print_bytes(unsigned char *input, int input_length)
 {
 	for(int i=0; i<input_length; i++){
 		if(i != 0 && i%16 == 0){
@@ -118,7 +165,7 @@ void print_bytes(unsigned char *input, int input_length)
 }
 
 
-int encrypt_aes(unsigned char *plaintext, int plaintext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *ciphertext)
+static int encrypt_aes(unsigned char *plaintext, int plaintext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *ciphertext)
 {
 	EVP_CIPHER_CTX *ctx;
 	int length;
@@ -168,7 +215,7 @@ int encrypt_aes(unsigned char *plaintext, int plaintext_length, unsigned char *a
 }
 
 
-int decrypt_aes(unsigned char *ciphertext, int ciphertext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *plaintext)
+static int decrypt_aes(unsigned char *ciphertext, int ciphertext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *plaintext)
 {
 	EVP_CIPHER_CTX *ctx;
 	int length;
@@ -218,7 +265,7 @@ int decrypt_aes(unsigned char *ciphertext, int ciphertext_length, unsigned char 
 }
 
 
-int encode_base64(const unsigned char *input, int length, unsigned char *output, int output_size)
+static int encode_base64(const unsigned char *input, int length, unsigned char *output, int output_size)
 {
 	BIO *b64 = BIO_new(BIO_f_base64());
 	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
@@ -274,7 +321,7 @@ int encode_base64(const unsigned char *input, int length, unsigned char *output,
 }
 
 
-int decode_base64(const unsigned char *input, int length, unsigned char *output, int output_size)
+static int decode_base64(const unsigned char *input, int length, unsigned char *output, int output_size)
 {
 	BIO *b64 = BIO_new(BIO_f_base64());
 	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
@@ -316,7 +363,7 @@ int decode_base64(const unsigned char *input, int length, unsigned char *output,
 }
 
 
-int get_md5_hash(const unsigned char *input, int input_length, unsigned char *output, int output_size)
+static int get_md5_hash(const unsigned char *input, int input_length, unsigned char *output, int output_size)
 {
 	EVP_MD_CTX *ctx = NULL;
 	int ret = 0;
@@ -387,7 +434,7 @@ int get_md5_hash(const unsigned char *input, int input_length, unsigned char *ou
 }
 
 
-int get_sha_256_hash(const unsigned char *input, int input_length, unsigned char *output, int output_size)
+static int get_sha_256_hash(const unsigned char *input, int input_length, unsigned char *output, int output_size)
 {
 	EVP_MD_CTX *ctx = NULL;
 	int ret = 0;
@@ -458,7 +505,7 @@ int get_sha_256_hash(const unsigned char *input, int input_length, unsigned char
 }
 
 
-int get_sha_512_256_hash(const unsigned char *input, int input_length, unsigned char *output, int output_size)
+static int get_sha_512_256_hash(const unsigned char *input, int input_length, unsigned char *output, int output_size)
 {
 	EVP_MD_CTX *ctx = NULL;
 	int ret = 0;
@@ -529,7 +576,7 @@ int get_sha_512_256_hash(const unsigned char *input, int input_length, unsigned 
 }
 
 
-int get_http_header(const char *input, const char *key, char *output, int output_size)
+static int get_http_header(const char *input, const char *key, char *output, int output_size)
 {
 	char *start = NULL;
 	char *end = NULL;
@@ -568,7 +615,7 @@ int get_http_header(const char *input, const char *key, char *output, int output
 }
 
 
-int get_digest_values(const char *input, struct digest_parameters *param)
+static int get_digest_values(const char *input, struct digest_parameters *param)
 {
 	char *start = NULL;
 	char *end = NULL;
@@ -690,7 +737,7 @@ int get_digest_values(const char *input, struct digest_parameters *param)
 }
 
 
-int get_digest_response(struct digest_parameters *param)
+static int get_digest_response(struct digest_parameters *param)
 {
 	int ret = 0;
 	int length = 0;
@@ -1116,7 +1163,7 @@ int get_digest_response(struct digest_parameters *param)
 }
 
 
-int encrypt_des_ecb(unsigned char *plaintext, int plaintext_length, unsigned char *key, unsigned char *ciphertext)
+static int encrypt_des_ecb(unsigned char *plaintext, int plaintext_length, unsigned char *key, unsigned char *ciphertext)
 {
 	EVP_CIPHER_CTX *ctx = NULL;
 	int length = 0;
@@ -1166,7 +1213,7 @@ int encrypt_des_ecb(unsigned char *plaintext, int plaintext_length, unsigned cha
 }
 
 
-int get_md4_hash(const unsigned char *input, int input_length, unsigned char *output, int output_size)
+static int get_md4_hash(const unsigned char *input, int input_length, unsigned char *output, int output_size)
 {
 	EVP_MD_CTX *ctx = NULL;
 	int ret = 0;
@@ -1235,7 +1282,7 @@ int get_md4_hash(const unsigned char *input, int input_length, unsigned char *ou
 }
 
 
-int get_hmac_md5(const unsigned char *input, int input_length, const unsigned char *key, int key_length, unsigned char *output, int output_size)
+static int get_hmac_md5(const unsigned char *input, int input_length, const unsigned char *key, int key_length, unsigned char *output, int output_size)
 {
 	EVP_MAC *mac = NULL;
 	EVP_MAC_CTX *ctx = NULL;
@@ -1301,7 +1348,7 @@ int get_hmac_md5(const unsigned char *input, int input_length, const unsigned ch
 }
 
 
-int get_upper_string(const char *input, int input_length, char *output)
+static int get_upper_string(const char *input, int input_length, char *output)
 {
 	for(int i=0; i<input_length; i++){
 		output[i] = toupper(input[i]);
@@ -1311,7 +1358,7 @@ int get_upper_string(const char *input, int input_length, char *output)
 }
 
 
-int get_number_of_bytes_of_utf16_string(char *input)
+static int get_number_of_bytes_of_utf16_string(char *input)
 {
 	int i = 0;
 
@@ -1323,7 +1370,7 @@ int get_number_of_bytes_of_utf16_string(char *input)
 }
 
 
-int convert_utf8_to_utf16(const char *input, char *output, int output_size)
+static int convert_utf8_to_utf16(const char *input, char *output, int output_size)
 {
 	int ret = 0;
 	int input_length = strlen(input);
@@ -1349,7 +1396,7 @@ int convert_utf8_to_utf16(const char *input, char *output, int output_size)
 }
 
 
-int get_av_pair_value(struct challenge_message *challenge_message, uint16_t av_id, unsigned char *data, int data_size)
+static int get_av_pair_value(struct challenge_message *challenge_message, uint16_t av_id, unsigned char *data, int data_size)
 {
 	uint16_t target_info_len = 0;
 	uint16_t target_info_max_len = 0;
@@ -1398,7 +1445,7 @@ int get_av_pair_value(struct challenge_message *challenge_message, uint16_t av_i
 }
 
 
-char hex_char_to_int(char c)
+static char hex_char_to_int(char c)
 {
 	char ret = 0;
 
@@ -1416,7 +1463,7 @@ char hex_char_to_int(char c)
 }
 
 
-int hexstring_to_array(char *hexstring, int hexstring_length, unsigned char *output, int output_size)
+static int hexstring_to_array(char *hexstring, int hexstring_length, unsigned char *output, int output_size)
 {
 	char tmp1 = 0;
 	char tmp2 = 0;
@@ -1460,7 +1507,7 @@ int hexstring_to_array(char *hexstring, int hexstring_length, unsigned char *out
  * Reference:
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nlmp/5e550938-91d4-459f-b67d-75d70009e3f3
  */
-int ntowfv2(const char *user, const char *password, const char *userdom, unsigned char *output, int output_size)
+static int ntowfv2(const char *user, const char *password, const char *userdom, unsigned char *output, int output_size)
 {
 	int ret = 0;
 
@@ -1594,7 +1641,7 @@ int ntowfv2(const char *user, const char *password, const char *userdom, unsigne
  * Reference:
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nlmp/5e550938-91d4-459f-b67d-75d70009e3f3
  */
-int lmowfv2(const char *user, const char *password, const char *userdom, unsigned char *output, int output_size)
+static int lmowfv2(const char *user, const char *password, const char *userdom, unsigned char *output, int output_size)
 {
 	int ret = 0;
 	int response_key_length = 0;
@@ -1616,7 +1663,7 @@ int lmowfv2(const char *user, const char *password, const char *userdom, unsigne
  * Reference:
  * https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nlmp/5e550938-91d4-459f-b67d-75d70009e3f3
  */
-int generate_response_ntlmv2(struct challenge_message *challenge_message, struct authenticate_message *authenticate_message)
+static int generate_response_ntlmv2(struct challenge_message *challenge_message, struct authenticate_message *authenticate_message)
 {
 	int ret = 0;
 
@@ -2003,7 +2050,7 @@ int generate_response_ntlmv2(struct challenge_message *challenge_message, struct
 }
 
 
-int get_base64_kerberos_token(char *spn, char *b64_kerberos_token, int b64_kerberos_token_size)
+static int get_base64_kerberos_token(char *spn, char *b64_kerberos_token, int b64_kerberos_token_size)
 {
 	SECURITY_STATUS security_status;
 	char pname[] = "Kerberos";
@@ -2087,7 +2134,7 @@ int get_base64_kerberos_token(char *spn, char *b64_kerberos_token, int b64_kerbe
  * Reference:
  * https://stackoverflow.com/questions/10905892/equivalent-of-gettimeofday-for-windows
  */
-int gettimeofday(timeval *tv, timezone *tz)
+static int gettimeofday(timeval *tv, timezone *tz)
 {
 	if(tv){
 		FILETIME filetime;
@@ -2121,7 +2168,7 @@ int gettimeofday(timeval *tv, timezone *tz)
 }
 
 
-void enable_blocking_socket(SOCKET sock)	// blocking
+static void enable_blocking_socket(SOCKET sock)	// blocking
 {
 	u_long iMode = 0;	// blocking
 	int ret = 0;
@@ -2137,7 +2184,7 @@ void enable_blocking_socket(SOCKET sock)	// blocking
 }
 
 
-void disable_blocking_socket(SOCKET sock)	// non blocking
+static void disable_blocking_socket(SOCKET sock)	// non blocking
 {
 	u_long iMode = 1;	// non blocking
 	int ret = 0;
@@ -2153,7 +2200,7 @@ void disable_blocking_socket(SOCKET sock)	// non blocking
 }
 
 
-void enable_blocking_bio(BIO *bio)	// blocking
+static void enable_blocking_bio(BIO *bio)	// blocking
 {
 	int ret = 0;
 	long n = 0;	// blocking
@@ -2169,7 +2216,7 @@ void enable_blocking_bio(BIO *bio)	// blocking
 }
 
 
-void disable_blocking_bio(BIO *bio)	// non blocking
+static void disable_blocking_bio(BIO *bio)	// non blocking
 {
 	int ret = 0;
 	long n = 1;	// non blocking
@@ -2185,7 +2232,7 @@ void disable_blocking_bio(BIO *bio)	// non blocking
 }
 
 
-int recv_data(SOCKET sock, void *buffer, int length, long tv_sec, long tv_usec)
+static int recv_data(SOCKET sock, void *buffer, int length, long tv_sec, long tv_usec)
 {
 	int rec = 0;
 	int err = 0;
@@ -2253,7 +2300,7 @@ int recv_data(SOCKET sock, void *buffer, int length, long tv_sec, long tv_usec)
 }
 
 
-int recv_data_bio(SOCKET sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec)
+static int recv_data_bio(SOCKET sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec)
 {
 	int rec = 0;
 	fd_set readfds;
@@ -2319,7 +2366,7 @@ int recv_data_bio(SOCKET sock, BIO *bio, void *buffer, int length, long tv_sec, 
 }
 
 
-int send_data(SOCKET sock, void *buffer, int length, long tv_sec, long tv_usec)
+static int send_data(SOCKET sock, void *buffer, int length, long tv_sec, long tv_usec)
 {
 	int sen = 0;
 	int err = 0;
@@ -2388,7 +2435,7 @@ int send_data(SOCKET sock, void *buffer, int length, long tv_sec, long tv_usec)
 }
 
 
-int send_data_bio(SOCKET sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec)
+static int send_data_bio(SOCKET sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec)
 {
 	int sen = 0;
 	int send_length = 0;
@@ -2456,7 +2503,7 @@ int send_data_bio(SOCKET sock, BIO *bio, void *buffer, int length, long tv_sec, 
 }
 
 
-int forwarder_bio(SOCKET client_sock, SOCKET target_sock, BIO *target_bio, long tv_sec, long tv_usec)
+static int forwarder_bio(SOCKET client_sock, SOCKET target_sock, BIO *target_bio, long tv_sec, long tv_usec)
 {
 	int rec,sen;
 	int len = 0;
@@ -2564,7 +2611,7 @@ error:
 }
 
 
-int ssl_connect_non_blocking(SOCKET sock, SSL *ssl, long tv_sec, long tv_usec)
+static int ssl_connect_non_blocking(SOCKET sock, SSL *ssl, long tv_sec, long tv_usec)
 {
 	fd_set readfds;
 	fd_set writefds;
@@ -2636,7 +2683,7 @@ int ssl_connect_non_blocking(SOCKET sock, SSL *ssl, long tv_sec, long tv_usec)
 }
 
 
-int bio_do_handshake_non_blocking(SOCKET sock, BIO *bio, long tv_sec, long tv_usec)
+static int bio_do_handshake_non_blocking(SOCKET sock, BIO *bio, long tv_sec, long tv_usec)
 {
 	fd_set readfds;
 	fd_set writefds;
@@ -2705,7 +2752,7 @@ int bio_do_handshake_non_blocking(SOCKET sock, BIO *bio, long tv_sec, long tv_us
 }
 
 
-void fini_ssl(ssl_param *param)
+static void fini_ssl(ssl_param *param)
 {
 	if(param->target_bio_socks5 != NULL){
 		BIO_ssl_shutdown(param->target_bio_http);
@@ -2726,7 +2773,7 @@ void fini_ssl(ssl_param *param)
 }
 
 
-void close_socket(SOCKET sock)
+static void close_socket(SOCKET sock)
 {
 	if(sock != INVALID_SOCKET){
 		shutdown(sock, SD_BOTH);
@@ -2738,7 +2785,7 @@ void close_socket(SOCKET sock)
 }
 
 
-int forward_proxy_authentication_no(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec)
+static int forward_proxy_authentication_no(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec)
 {
 	char *buffer = (char *)calloc(BUFFER_SIZE+1, sizeof(char));
 	char *http_request = (char *)calloc(BUFFER_SIZE+1, sizeof(char));
@@ -2796,7 +2843,7 @@ error:
 }
 
 
-int forward_proxy_authentication_basic(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec)
+static int forward_proxy_authentication_basic(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec)
 {
 	char *buffer = (char *)calloc(BUFFER_SIZE+1, sizeof(char));
 	char *http_request = (char *)calloc(BUFFER_SIZE+1, sizeof(char));
@@ -2868,7 +2915,7 @@ error:
 }
 
 
-int forward_proxy_authentication_digest(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec)
+static int forward_proxy_authentication_digest(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec)
 {
 	char *buffer = (char *)calloc(BUFFER_SIZE+1, sizeof(char));
 	char *http_request = (char *)calloc(BUFFER_SIZE+1, sizeof(char));
@@ -3034,7 +3081,7 @@ error:
 }
 
 
-int forward_proxy_authentication_ntlmv2(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec)
+static int forward_proxy_authentication_ntlmv2(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec)
 {
 	char *buffer = (char *)calloc(BUFFER_SIZE+1, sizeof(char));
 	char *http_request = (char *)calloc(BUFFER_SIZE+1, sizeof(char));
@@ -3298,7 +3345,7 @@ error:
 }
 
 
-int forward_proxy_authentication_spnego(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec)
+static int forward_proxy_authentication_spnego(SOCKET forward_proxy_sock, char *target_domainname, char *target_port_number, long tv_sec, long tv_usec)
 {
 	char *buffer = (char *)calloc(BUFFER_SIZE+1, sizeof(char));
 	char *http_request = (char *)calloc(BUFFER_SIZE+1, sizeof(char));
@@ -3455,7 +3502,7 @@ error:
 }
 
 
-int worker(void *ptr)
+static int worker(void *ptr)
 {
 	worker_param *worker_param = (struct worker_param *)ptr;
 	SOCKET client_sock = worker_param->client_sock;
@@ -4423,7 +4470,7 @@ error:
 }
 
 
-void worker_thread(void *ptr)
+static void worker_thread(void *ptr)
 {
 	int err = 0;
 
@@ -4433,7 +4480,7 @@ void worker_thread(void *ptr)
 }
 
 
-void usage(char *filename)
+static void usage(char *filename)
 {
 	printf("usage   : %s -h listen_domainname -p listen_port -H target_socks5server_domainname -P target_socks5server_https_port\n", filename);
 	printf("          [-A recv/send tv_sec(timeout 0-60 sec)] [-B recv/send tv_usec(timeout 0-1000000 microsec)]\n");
@@ -4462,7 +4509,7 @@ void usage(char *filename)
 }
 
 
-int getopt(int argc, char **argv, char *optstring)
+static int getopt(int argc, char **argv, char *optstring)
 {
 	unsigned char opt = '\0';
 	unsigned char next = '\0';

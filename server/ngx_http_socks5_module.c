@@ -55,16 +55,21 @@ static char authentication_method = 0x0;	// 0x0:No Authentication Required	0x2:U
 static char username[256] = "socks5user";
 static char password[256] = "supersecretpassword";
 
-char cipher_suite_tls_1_2[1000] = "AESGCM+ECDSA:CHACHA20+ECDSA:+AES256";	// TLS1.2
-char cipher_suite_tls_1_3[1000] = "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256";	// TLS1.3
+static char cipher_suite_tls_1_2[1000] = "AESGCM+ECDSA:CHACHA20+ECDSA:+AES256";	// TLS1.2
+static char cipher_suite_tls_1_3[1000] = "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256";	// TLS1.3
 
-int socks5_over_tls_client_certificate_authentication_flag = 0;	// 0:off 1:on
-char client_certificate_filename_socks5[256] = "/etc/nginx/certs/client_socks5.crt";	// client certificate filename (Socks5 over TLS)
+static int socks5_over_tls_client_certificate_authentication_flag = 0;	// 0:off 1:on
+static char client_certificate_filename_socks5[256] = "/etc/nginx/certs/client_socks5.crt";	// client certificate filename (Socks5 over TLS)
 
-char tor_client_ip[256] = "127.0.0.1";
-char tor_client_ip_atyp = 0x1;		// ipv4:0x1 domainname:0x3 ipv6:0x4
-uint16_t tor_client_port = 9050;
+static char tor_client_ip[256] = "127.0.0.1";
+static char tor_client_ip_atyp = 0x1;		// ipv4:0x1 domainname:0x3 ipv6:0x4
+static uint16_t tor_client_port = 9050;
 
+
+static ngx_table_elt_t *search_headers_in(ngx_http_request_t *r, u_char *name, size_t len);
+static ngx_int_t ngx_http_socks5_header_filter(ngx_http_request_t *r);
+static ngx_int_t ngx_http_socks5_body_filter(ngx_http_request_t *r, ngx_chain_t *in);
+static ngx_int_t ngx_http_socks5_init(ngx_conf_t *cf);
 
 static ngx_http_output_header_filter_pt ngx_http_next_header_filter;
 
@@ -97,7 +102,27 @@ ngx_module_t ngx_http_socks5_module = {
 };
 
 
-int encrypt_aes(ngx_http_request_t *r, unsigned char *plaintext, int plaintext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *ciphertext)
+//static int encrypt_aes(ngx_http_request_t *r, unsigned char *plaintext, int plaintext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *ciphertext);
+//static int decrypt_aes(ngx_http_request_t *r, unsigned char *ciphertext, int ciphertext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *plaintext);
+static void enable_blocking_socket(ngx_http_request_t *r, int sock);	// blocking
+static void disable_blocking_socket(ngx_http_request_t *r, int sock);	// non blocking
+//static void enable_blocking_bio(ngx_http_request_t *r, BIO *bio);	// blocking
+//static void disable_blocking_bio(ngx_http_request_t *r, BIO *bio);	// non blocking
+static int recv_data(ngx_http_request_t *r, int sock, void *buffer, int length, long tv_sec, long tv_usec);
+static int recv_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec);
+static int send_data(ngx_http_request_t *r, int sock, void *buffer, int length, long tv_sec, long tv_usec);
+static int send_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec);
+static int forwarder_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, int target_sock, long tv_sec, long tv_usec);
+static int send_socks_response_ipv4_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char rep, char rsv, char atyp, long tv_sec, long tv_usec);
+static int send_socks_response_ipv6_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char rep, char rsv, char atyp, long tv_sec, long tv_usec);
+static int do_socks5_handshake_tor_client(ngx_http_request_t *r, int tor_sock, char tor_dst_atyp, char tor_dst_addr_len, char *tor_dst_addr, char *tor_dst_port, long tv_sec, long tv_usec);
+static int bio_do_handshake_non_blocking(ngx_http_request_t *r, int sock, BIO *bio, long tv_sec, long tv_usec);
+static void fini_ssl(ngx_http_request_t *r, struct ssl_param *param);
+static void close_socket(int sock);
+static int worker(ngx_http_request_t *r, void *ptr);
+
+/*
+static int encrypt_aes(ngx_http_request_t *r, unsigned char *plaintext, int plaintext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *ciphertext)
 {
 	EVP_CIPHER_CTX *ctx;
 	int length;
@@ -142,9 +167,9 @@ int encrypt_aes(ngx_http_request_t *r, unsigned char *plaintext, int plaintext_l
 	
 	return ciphertext_length;
 }
-
-
-int decrypt_aes(ngx_http_request_t *r, unsigned char *ciphertext, int ciphertext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *plaintext)
+*/
+/*
+static int decrypt_aes(ngx_http_request_t *r, unsigned char *ciphertext, int ciphertext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *plaintext)
 {
 	EVP_CIPHER_CTX *ctx;
 	int length;
@@ -189,9 +214,9 @@ int decrypt_aes(ngx_http_request_t *r, unsigned char *ciphertext, int ciphertext
 	
 	return plaintext_length;
 }
+*/
 
-
-void enable_blocking_socket(ngx_http_request_t *r, int sock)	// blocking
+static void enable_blocking_socket(ngx_http_request_t *r, int sock)	// blocking
 {
 	int flags = 0;
 	int ret = 0;
@@ -209,7 +234,7 @@ void enable_blocking_socket(ngx_http_request_t *r, int sock)	// blocking
 }
 
 
-void disable_blocking_socket(ngx_http_request_t *r, int sock)	// non blocking
+static void disable_blocking_socket(ngx_http_request_t *r, int sock)	// non blocking
 {
 	int flags = 0;
 	int ret = 0;
@@ -226,8 +251,8 @@ void disable_blocking_socket(ngx_http_request_t *r, int sock)	// non blocking
 	return;
 }
 
-
-void enable_blocking_bio(ngx_http_request_t *r, BIO *bio)	// blocking
+/*
+static void enable_blocking_bio(ngx_http_request_t *r, BIO *bio)	// blocking
 {
 	int ret = 0;
 	long n = 0;	// blocking
@@ -241,9 +266,9 @@ void enable_blocking_bio(ngx_http_request_t *r, BIO *bio)	// blocking
 
 	return;
 }
-
-
-void disable_blocking_bio(ngx_http_request_t *r, BIO *bio)	// non blocking
+*/
+/*
+static void disable_blocking_bio(ngx_http_request_t *r, BIO *bio)	// non blocking
 {
 	int ret = 0;
 	long n = 1;	// non blocking
@@ -257,9 +282,9 @@ void disable_blocking_bio(ngx_http_request_t *r, BIO *bio)	// non blocking
 
 	return;
 }
+*/
 
-
-int recv_data(ngx_http_request_t *r, int sock, void *buffer, int length, long tv_sec, long tv_usec)
+static int recv_data(ngx_http_request_t *r, int sock, void *buffer, int length, long tv_sec, long tv_usec)
 {
 	int rec = 0;
 	fd_set readfds;
@@ -331,7 +356,7 @@ int recv_data(ngx_http_request_t *r, int sock, void *buffer, int length, long tv
 }
 
 
-int recv_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec)
+static int recv_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec)
 {
 	int rec = 0;
 	fd_set readfds;
@@ -400,7 +425,7 @@ int recv_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer, int l
 }
 
 
-int send_data(ngx_http_request_t *r, int sock, void *buffer, int length, long tv_sec, long tv_usec)
+static int send_data(ngx_http_request_t *r, int sock, void *buffer, int length, long tv_sec, long tv_usec)
 {
 	int sen = 0;
 	int send_length = 0;
@@ -473,7 +498,7 @@ int send_data(ngx_http_request_t *r, int sock, void *buffer, int length, long tv
 }
 
 
-int send_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec)
+static int send_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec)
 {
 	int sen = 0;
 	int send_length = 0;
@@ -544,7 +569,7 @@ int send_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer, int l
 }
 
 
-int forwarder_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, int target_sock, long tv_sec, long tv_usec)
+static int forwarder_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, int target_sock, long tv_sec, long tv_usec)
 {
 	int rec,sen;
 	int len = 0;
@@ -656,7 +681,7 @@ error:
 }
 
 
-int send_socks_response_ipv4_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char rep, char rsv, char atyp, long tv_sec, long tv_usec)
+static int send_socks_response_ipv4_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char rep, char rsv, char atyp, long tv_sec, long tv_usec)
 {
 	int sen;
 	struct socks_response_ipv4 *socks_response_ipv4 = (struct socks_response_ipv4 *)malloc(sizeof(struct socks_response_ipv4));
@@ -676,7 +701,7 @@ int send_socks_response_ipv4_bio(ngx_http_request_t *r, int client_sock, BIO *cl
 }
 
 
-int send_socks_response_ipv6_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char rep, char rsv, char atyp, long tv_sec, long tv_usec)
+static int send_socks_response_ipv6_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char rep, char rsv, char atyp, long tv_sec, long tv_usec)
 {
 	int sen;
 	struct socks_response_ipv6 *socks_response_ipv6 = (struct socks_response_ipv6 *)malloc(sizeof(struct socks_response_ipv6));
@@ -696,7 +721,7 @@ int send_socks_response_ipv6_bio(ngx_http_request_t *r, int client_sock, BIO *cl
 }
 
 
-int do_socks5_handshake_tor_client(ngx_http_request_t *r, int tor_sock, char tor_dst_atyp, char tor_dst_addr_len, char *tor_dst_addr, char *tor_dst_port, long tv_sec, long tv_usec)
+static int do_socks5_handshake_tor_client(ngx_http_request_t *r, int tor_sock, char tor_dst_atyp, char tor_dst_addr_len, char *tor_dst_addr, char *tor_dst_port, long tv_sec, long tv_usec)
 {
 	int rec, sen;
 	int ret = 0;
@@ -832,7 +857,7 @@ error:
 }
 
 
-int bio_do_handshake_non_blocking(ngx_http_request_t *r, int sock, BIO *bio, long tv_sec, long tv_usec)
+static int bio_do_handshake_non_blocking(ngx_http_request_t *r, int sock, BIO *bio, long tv_sec, long tv_usec)
 {
 	fd_set readfds;
 	fd_set writefds;
@@ -903,7 +928,7 @@ int bio_do_handshake_non_blocking(ngx_http_request_t *r, int sock, BIO *bio, lon
 }
 
 
-int worker(ngx_http_request_t *r, void *ptr)
+static int worker(ngx_http_request_t *r, void *ptr)
 {
 	struct worker_param *worker_param = (struct worker_param *)ptr;
 	int client_sock = worker_param->client_sock;
@@ -2038,7 +2063,7 @@ error:
 }
 
 
-void fini_ssl(ngx_http_request_t *r, struct ssl_param *param)
+static void fini_ssl(ngx_http_request_t *r, struct ssl_param *param)
 {
 //	client_bio_http		:BIO_NOCLOSE
 //	client_bio_socks5	:BIO_CLOSE
@@ -2057,7 +2082,7 @@ void fini_ssl(ngx_http_request_t *r, struct ssl_param *param)
 }
 
 
-void close_socket(int sock)
+static void close_socket(int sock)
 {
 	if(sock != -1){
 		shutdown(sock, SHUT_RDWR);
