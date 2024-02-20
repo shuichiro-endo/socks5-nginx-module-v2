@@ -58,6 +58,9 @@ static char password[256] = "supersecretpassword";
 char cipher_suite_tls_1_2[1000] = "AESGCM+ECDSA:CHACHA20+ECDSA:+AES256";	// TLS1.2
 char cipher_suite_tls_1_3[1000] = "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256";	// TLS1.3
 
+int socks5_over_tls_client_certificate_authentication_flag = 0;	// 0:off 1:on
+char client_certificate_filename_socks5[256] = "/etc/nginx/certs/client_socks5.crt";	// client certificate filename (Socks5 over TLS)
+
 char tor_client_ip[256] = "127.0.0.1";
 char tor_client_ip_atyp = 0x1;		// ipv4:0x1 domainname:0x3 ipv6:0x4
 uint16_t tor_client_port = 9050;
@@ -2285,6 +2288,29 @@ static ngx_int_t ngx_http_socks5_header_filter(ngx_http_request_t *r)
 			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] SSL_CTX_set_ciphersuites error");
 #endif
 			goto error;
+		}
+
+		if(socks5_over_tls_client_certificate_authentication_flag == 1){
+#ifdef _DEBUG
+			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Client certificate authentication(socks5 over tls)");
+#endif
+			ret = SSL_CTX_set_default_verify_paths(client_ctx_socks5);
+			if(ret == 0){
+#ifdef _DEBUG
+				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] SSL_CTX_set_default_verify_paths error");
+#endif
+				goto error;
+			}
+
+			ret = SSL_CTX_load_verify_locations(client_ctx_socks5, client_certificate_filename_socks5, NULL);
+			if(ret == 0){
+#ifdef _DEBUG
+				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] SSL_CTX_load_verify_locations error");
+#endif
+				goto error;
+			}
+
+			SSL_CTX_set_verify(client_ctx_socks5, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
 		}
 
 		client_bio_socks5 = BIO_new_ssl(client_ctx_socks5, 0);	// server mode

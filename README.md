@@ -26,6 +26,7 @@ sequenceDiagram
         C-->>B: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
         B->>B: check SOCKS5_CHECK_MESSAGE
         B->>+C: SSL connect (Socks5 over TLS)
+        C->>C: if socks5_over_tls_client_certificate_authentication_flag is 1(on), do client certificate authentication
         B->>+C: socks5 selection request (Socks5 over TLS)
         C-->>-B: socks5 selection response (Socks5 over TLS)
         B-->>-A: socks5 selection response (Socks5)
@@ -76,6 +77,7 @@ sequenceDiagram
         C-->>B: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
         B->>B: check SOCKS5_CHECK_MESSAGE
         B->>+C: SSL connect (Socks5 over TLS)
+        C->>C: if socks5_over_tls_client_certificate_authentication_flag is 1(on), do client certificate authentication
         B->>+C: socks5 selection request (Socks5 over TLS)
         C-->>-B: socks5 selection response (Socks5 over TLS)
         B-->>-A: socks5 selection response (Socks5)
@@ -148,6 +150,7 @@ sequenceDiagram
         B->>B: check SOCKS5_CHECK_MESSAGE
         B->>+C: SSL connect (Socks5 over TLS)
         C->>+D: SSL connect (Socks5 over TLS)
+        D->>D: if socks5_over_tls_client_certificate_authentication_flag is 1(on), do client certificate authentication
         B->>+C: socks5 selection request (Socks5 over TLS)
         C->>+D: socks5 selection request (Socks5 over TLS)
         D-->>-C: socks5 selection response (Socks5 over TLS)
@@ -222,6 +225,7 @@ sequenceDiagram
         B->>B: check SOCKS5_CHECK_MESSAGE
         B->>+C: SSL connect (Socks5 over TLS)
         C->>+D: SSL connect (Socks5 over TLS)
+        D->>D: if socks5_over_tls_client_certificate_authentication_flag is 1(on), do client certificate authentication
         B->>+C: socks5 selection request (Socks5 over TLS)
         C->>+D: socks5 selection request (Socks5 over TLS)
         D-->>-C: socks5 selection response (Socks5 over TLS)
@@ -384,6 +388,7 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
               [-e forward proxy username] [-f forward proxy password] [-g forward proxy user domainname]
               [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]
               [-t (tor connection)]
+              [-u (client certificate authentication(socks5 over tls))]
     example : ./client -h 0.0.0.0 -p 9050 -H 192.168.0.10 -P 443
             : ./client -h localhost -p 9050 -H foobar.test -P 443
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0
@@ -788,6 +793,72 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
     ```
     6. restart nginx server
+    ```
+    sudo systemctl restart nginx
+    ```
+
+### How to set up client certificate authentication (for Socks5 over TLS)
+- client
+    1. generate client privatekey, publickey and certificate
+    ```
+    openssl req -x509 -days 3650 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -subj /CN=localhost -outform PEM -keyout client_socks5_private.key -out client_socks5.crt
+    openssl x509 -text -noout -in client_socks5.crt
+    ```
+    2. copy the server privatekey and certificate
+    ```
+    cat client_socks5_private.key | sed -e 's/^/"/g' -e 's/$/\\n"\\/g' -e 's/"-----END PRIVATE KEY-----\\n"\\/"-----END PRIVATE KEY-----\\n";/g'
+    cat client_socks5.crt | sed -e 's/^/"/g' -e 's/$/\\n"\\/g' -e 's/"-----END CERTIFICATE-----\\n"\\/"-----END CERTIFICATE-----\\n";/g'
+    ```
+    3. paste the privatekey and certificate into clientkey.h file
+    ```
+    char client_privatekey_socks5[] = "-----BEGIN PRIVATE KEY-----\n"\
+    "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgVlI3ePznE9rDgA8t\n"\
+    "89jlF1ycGs3NRZxENRO3wuPvKkuhRANCAASTnYHeV4BiCybI7xQyOSS24I6np6bp\n"\
+    "i4rXxqVammICpvBiYNJMACzWlUUeGtFBAQzOcUim9zf9cDq/nW9o1jEg\n"\
+    "-----END PRIVATE KEY-----\n";
+
+    char client_certificate_socks5[] = "-----BEGIN CERTIFICATE-----\n"\
+    "MIIBfjCCASOgAwIBAgIUJGmCvAtce4aM07rJQ3ZzS2HTZkgwCgYIKoZIzj0EAwIw\n"\
+    "FDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI0MDIxOTIyMTMzMFoXDTM0MDIxNjIy\n"\
+    "MTMzMFowFDESMBAGA1UEAwwJbG9jYWxob3N0MFkwEwYHKoZIzj0CAQYIKoZIzj0D\n"\
+    "AQcDQgAEk52B3leAYgsmyO8UMjkktuCOp6em6YuK18alWppiAqbwYmDSTAAs1pVF\n"\
+    "HhrRQQEMznFIpvc3/XA6v51vaNYxIKNTMFEwHQYDVR0OBBYEFMcnL1L1q2KPB+7f\n"\
+    "4eJDoRtGxo+/MB8GA1UdIwQYMBaAFMcnL1L1q2KPB+7f4eJDoRtGxo+/MA8GA1Ud\n"\
+    "EwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSQAwRgIhAKZLK9oM8NbY1RMUb4LnWpIJ\n"\
+    "CZJbhZeupqlLaJOh9tmwAiEArEyZm8JkP0VodyQ5k/9kbOiKpwBwGseMh3UHLUb+\n"\
+    "jhM=\n"\
+    "-----END CERTIFICATE-----\n";
+    ```
+    4. build
+    ```
+    cd socks5-nginx-module-v2/client
+    make
+    ```
+
+- server
+    1. copy client_socks5.crt file to server directory (e.g. /etc/nginx/certs/)
+    ```
+    sudo mkdir /etc/nginx/certs
+    sudo chmod 755 /etc/nginx/certs
+    sudo cp client_socks5.crt /etc/nginx/certs/
+    sudo chmod 644 /etc/nginx/certs/client_socks5.crt
+    ```
+    2. modify ngx_http_socks5_module.c file
+    ```
+    int socks5_over_tls_client_certificate_authentication_flag = 1;	// 0:off 1:on
+    char client_certificate_filename_socks5[256] = "/etc/nginx/certs/client_socks5.crt";	// client certificate filename (Socks5 over TLS)
+    ```
+    3. build my module (dynamic module)
+    ```
+    cd socks5-nginx-module-v2/nginx-x.xx.x
+    ./configure --with-compat --add-dynamic-module=../server --with-ld-opt="-lssl -lcrypto"
+    make modules
+    ```
+    4. copy the module library (.so file) to the nginx modules directory
+    ```
+    sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    ```
+    5. restart nginx server
     ```
     sudo systemctl restart nginx
     ```

@@ -44,6 +44,7 @@
 #include "socks5.h"
 #include "ntlm.h"
 #include "client.h"
+#include "clientkey.h"
 
 #define BUFFER_SIZE 8192
 #define USERNAME_MAX_SIZE 255
@@ -86,6 +87,7 @@ char *forward_proxy_nthash_hexstring = NULL;	// nthash hexstring
 int tor_connection_flag = 0;	// 0:off 1:on
 int forward_proxy_flag = 0;		// 0:no 1:http 2:https
 int forward_proxy_authentication_flag = 0;	// 0:no 1:basic 2:digest 3:ntlmv2 4:spnego(kerberos)
+int socks5_over_tls_client_certificate_authentication_flag = 0;	// 0:off 1:on
 
 char forward_proxy_certificate_filename_https[256] = "./forward_proxy_https.crt";	// forward proxy certificate filename (HTTPS)
 
@@ -3568,6 +3570,10 @@ int worker(void *ptr)
 	SSL *target_ssl_socks5 = NULL;
 	BIO *target_bio_socks5 = NULL;
 
+	BIO *bio = NULL;
+	EVP_PKEY *c_privatekey_socks5 = NULL;
+	X509 *c_cert_socks5 = NULL;
+
 	struct ssl_param ssl_param;
 	ssl_param.target_ctx_http = NULL;
 	ssl_param.target_ssl_http = NULL;
@@ -4146,6 +4152,30 @@ int worker(void *ptr)
 	}
 	ssl_param.target_ctx_socks5 = target_ctx_socks5;
 
+	if(socks5_over_tls_client_certificate_authentication_flag == 1){
+		// client private key (Socks5 over TLS)
+		bio = BIO_new(BIO_s_mem());
+		BIO_write(bio, client_privatekey_socks5, strlen(client_privatekey_socks5));
+		PEM_read_bio_PrivateKey(bio, &c_privatekey_socks5, NULL, NULL);
+		BIO_free(bio);
+
+		// client X509 certificate (Socks5 over TLS)
+		bio = BIO_new(BIO_s_mem());
+		BIO_write(bio, client_certificate_socks5, strlen(client_certificate_socks5));
+		PEM_read_bio_X509(bio, &c_cert_socks5, NULL, NULL);
+		BIO_free(bio);
+
+		SSL_CTX_use_certificate(target_ctx_socks5, c_cert_socks5);
+		SSL_CTX_use_PrivateKey(target_ctx_socks5, c_privatekey_socks5);
+		ret = SSL_CTX_check_private_key(target_ctx_socks5);
+		if(ret != 1){
+#ifdef _DEBUG
+			printf("[E] SSL_CTX_check_private_key error\n");
+#endif
+			goto error;
+		}
+	}
+
 //	SSL_CTX_set_mode(target_ctx_socks5, SSL_MODE_AUTO_RETRY);
 
 	ret = SSL_CTX_set_min_proto_version(target_ctx_socks5, TLS1_2_VERSION);
@@ -4446,6 +4476,7 @@ void usage(char *filename)
 	printf("          [-e forward proxy username] [-f forward proxy password] [-g forward proxy user domainname]\n");
 	printf("          [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]\n");
 	printf("          [-t (tor connection)]\n");
+	printf("          [-u (client certificate authentication(socks5 over tls))]\n");
 	printf("example : %s -h 0.0.0.0 -p 9050 -H 192.168.0.10 -P 443\n", filename);
 	printf("        : %s -h localhost -p 9050 -H foobar.test -P 443\n", filename);
 	printf("        : %s -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0\n", filename);
@@ -4466,7 +4497,7 @@ void usage(char *filename)
 int main(int argc, char **argv)
 {
 	int opt;
-	const char* optstring = "h:p:H:P:A:B:C:D:a:b:c:d:e:f:g:i:j:k:t";
+	const char* optstring = "h:p:H:P:A:B:C:D:a:b:c:d:e:f:g:i:j:k:tu";
 	opterr = 0;
 	long tv_sec = 3;	// recv send
 	long tv_usec = 0;	// recv send
@@ -4549,6 +4580,10 @@ int main(int argc, char **argv)
 
 		case 't':
 			tor_connection_flag = 1;
+			break;
+
+		case 'u':
+			socks5_over_tls_client_certificate_authentication_flag = 1;
 			break;
 
 		default:
@@ -4723,6 +4758,14 @@ int main(int argc, char **argv)
 #endif
 	}else{
 		printf("[I] Tor client connection:on\n");
+	}
+
+	if(socks5_over_tls_client_certificate_authentication_flag == 0){
+#ifdef _DEBUG
+		printf("[I] Client certificate authentication(socks5 over tls):off\n");
+#endif
+	}else{
+		printf("[I] Client certificate authentication(socks5 over tls):on\n");
 	}
 
 #ifdef _DEBUG
