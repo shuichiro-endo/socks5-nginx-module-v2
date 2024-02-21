@@ -44,3 +44,81 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     curl -v -x socks5h://127.0.0.1:9050 https://www.google.com
     ```
 
+## Notes
+### How to set up client certificate authentication (for Socks5 over TLS, optional)
+- client
+    1. generate socks5 over tls client privatekey and certificate
+    ```
+    cd socks5-nginx-module-v2/client
+    openssl req -x509 -days 3650 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -subj /CN=localhost -outform PEM -keyout client_socks5_private.key -out client_socks5.crt
+    openssl x509 -text -noout -in client_socks5.crt
+    ```
+    2. copy the client privatekey and certificate
+    ```
+    cat client_socks5_private.key | sed -e 's/^/"/g' -e 's/$/\\n"\\/g' -e 's/"-----END PRIVATE KEY-----\\n"\\/"-----END PRIVATE KEY-----\\n";/g'
+    cat client_socks5.crt | sed -e 's/^/"/g' -e 's/$/\\n"\\/g' -e 's/"-----END CERTIFICATE-----\\n"\\/"-----END CERTIFICATE-----\\n";/g'
+    ```
+    3. paste the privatekey and certificate into clientkey.h file
+    ```
+    char client_privatekey_socks5[] = "-----BEGIN PRIVATE KEY-----\n"\
+    "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgVlI3ePznE9rDgA8t\n"\
+    "89jlF1ycGs3NRZxENRO3wuPvKkuhRANCAASTnYHeV4BiCybI7xQyOSS24I6np6bp\n"\
+    "i4rXxqVammICpvBiYNJMACzWlUUeGtFBAQzOcUim9zf9cDq/nW9o1jEg\n"\
+    "-----END PRIVATE KEY-----\n";
+
+    char client_certificate_socks5[] = "-----BEGIN CERTIFICATE-----\n"\
+    "MIIBfjCCASOgAwIBAgIUJGmCvAtce4aM07rJQ3ZzS2HTZkgwCgYIKoZIzj0EAwIw\n"\
+    "FDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI0MDIxOTIyMTMzMFoXDTM0MDIxNjIy\n"\
+    "MTMzMFowFDESMBAGA1UEAwwJbG9jYWxob3N0MFkwEwYHKoZIzj0CAQYIKoZIzj0D\n"\
+    "AQcDQgAEk52B3leAYgsmyO8UMjkktuCOp6em6YuK18alWppiAqbwYmDSTAAs1pVF\n"\
+    "HhrRQQEMznFIpvc3/XA6v51vaNYxIKNTMFEwHQYDVR0OBBYEFMcnL1L1q2KPB+7f\n"\
+    "4eJDoRtGxo+/MB8GA1UdIwQYMBaAFMcnL1L1q2KPB+7f4eJDoRtGxo+/MA8GA1Ud\n"\
+    "EwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSQAwRgIhAKZLK9oM8NbY1RMUb4LnWpIJ\n"\
+    "CZJbhZeupqlLaJOh9tmwAiEArEyZm8JkP0VodyQ5k/9kbOiKpwBwGseMh3UHLUb+\n"\
+    "jhM=\n"\
+    "-----END CERTIFICATE-----\n";
+    ```
+    4. build
+    ```
+    cd socks5-nginx-module-v2/client
+    make
+    ```
+
+- server
+    1. copy client_socks5.crt file to server directory (e.g. /etc/nginx/certs/)
+    ```
+    docker start socks5-nginx
+    docker cp socks5-nginx-module-v2/client/client_socks5.crt socks5-nginx:/root/
+    docker exec -it socks5-nginx bash
+    ```
+    ```
+    cd /root
+    mkdir /etc/nginx/certs
+    chmod 755 /etc/nginx/certs
+    cp /root/client_socks5.crt /etc/nginx/certs/
+    chmod 644 /etc/nginx/certs/client_socks5.crt
+    ```
+    2. modify ngx_http_socks5_module.c file
+    ```
+    vim /root/socks5-nginx-module-v2/server/ngx_http_socks5_module.c
+    ```
+    ```
+    static int socks5_over_tls_client_certificate_authentication_flag = 1;	// 0:off 1:on
+    static char client_certificate_filename_socks5[256] = "/etc/nginx/certs/client_socks5.crt";	// client certificate filename (Socks5 over TLS)
+    ```
+    3. build my module (dynamic module)
+    ```
+    cd /root/socks5-nginx-module-v2/nginx-x.xx.x
+    ./configure --with-compat --add-dynamic-module=../server --with-ld-opt="-lssl -lcrypto"
+    make modules
+    ```
+    4. copy the module library (.so file) to the nginx modules directory
+    ```
+    cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    exit
+    ```
+    5. restart nginx server
+    ```
+    docker restart socks5-nginx
+    ```
+
