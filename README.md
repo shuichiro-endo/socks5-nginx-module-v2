@@ -576,6 +576,51 @@ Valid starting       Expires              Service principal
 	renew until 01/27/2024 03:59:33
 ```
 
+### Client certificate authentication (for Socks5 over TLS)
+If the server side client certificate verification fails, BIO_do_handshake of my client may return success.
+
+This is not a problem.
+
+[SSL_do_handshake returns success on server side client certificate validation failure #22229](https://github.com/openssl/openssl/discussions/22229)
+
+- client
+```
+> ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 20 -C 20 -u
+[I] Forward proxy:off
+[I] Tor client connection:off
+[I] Client certificate authentication(socks5 over tls):on
+[I] Timeout recv/send tv_sec(0-60  sec): 20 sec recv/send tv_usec(0-1000000 microsec):      0 microsec
+[I] Timeout forwarder tv_sec(0-300 sec): 20 sec forwarder tv_usec(0-1000000 microsec):      0 microsec
+[I] [client -> server] Listening port 9050 on 0.0.0.0
+[I] [client <- server] Connected from ip:127.0.0.1 port:34174
+[I] Target domainname:foobar.test, Length:11
+[I] [server -> target] Connecting ip:127.0.0.1 port:443
+[I] [server <- target] Connected to target socks5 server
+[I] [server -> target] Try HTTPS connection (SSL_connect)
+[I] [server <- target] Succeed HTTPS connection (SSL_connect)
+[I] [server -> target] Send http request
+[I] [server <- target] count:1 rec:9
+[I] [server <- target] Server Socks5 OK
+[I] [server -> target] Try Socks5 over TLS connection (BIO_do_handshake)
+[I] [server <- target] Succeed Socks5 over TLS connection (BIO_do_handshake)
+[I] [client -> server] Receive selection request:4 bytes
+[I] [server -> target] Send selection request:4 bytes
+[E] BIO_read error:0:error:0A000418:SSL routines::tlsv1 alert unknown ca
+[E] [server <- target] Receive selection response
+```
+
+- server
+```
+2024/02/21 13:48:17 [debug] 647#647: *2 [I] Socks5 start
+2024/02/21 13:48:17 [debug] 647#647: *2 [I] Timeout recv/send tv_sec:20 sec recv/send tv_usec:0 microsec
+2024/02/21 13:48:17 [debug] 647#647: *2 [I] Timeout forwarder tv_sec:20 sec forwarder tv_usec:0 microsec
+2024/02/21 13:48:17 [debug] 647#647: *2 [I] [client <- server] Send SOCKS5_CHECK_MESSAGE
+2024/02/21 13:48:17 [debug] 647#647: *2 [I] Client certificate authentication(socks5 over tls)
+2024/02/21 13:48:17 [debug] 647#647: *2 [I] [client -> server] Try Socks5 over TLS connection (BIO_do_handshake)
+2024/02/21 13:48:17 [debug] 647#647: *2 [E] BIO_do_handshake error:error:0A000086:SSL routines::certificate verify failed
+2024/02/21 13:48:17 [debug] 647#647: *2 [E] [client <- server] BIO_do_handshake error
+```
+
 ## Notes
 ### How to change HTTP Request Header Key and Value
 Note: There are characters that cannot be used in the HTTP Request Header Key or Value.
@@ -700,7 +745,7 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
 
 ### How to change socks5 server privatekey and certificate (for Socks5 over TLS)
 - server
-    1. generate server privatekey, publickey and certificate
+    1. generate server privatekey and certificate
     ```
     openssl req -x509 -days 3650 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -subj /CN=localhost -outform PEM -keyout server_socks5_private.key -out server_socks5.crt
     openssl x509 -text -noout -in server_socks5.crt
@@ -798,7 +843,7 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
 
 ### How to set up client certificate authentication (for Socks5 over TLS)
 - client
-    1. generate client privatekey, publickey and certificate
+    1. generate client privatekey and certificate
     ```
     openssl req -x509 -days 3650 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -subj /CN=localhost -outform PEM -keyout client_socks5_private.key -out client_socks5.crt
     openssl x509 -text -noout -in client_socks5.crt
