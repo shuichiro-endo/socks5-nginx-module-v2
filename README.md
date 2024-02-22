@@ -621,6 +621,24 @@ This is not a problem.
 2024/02/21 13:48:17 [debug] 647#647: *2 [E] [client <- server] BIO_do_handshake error
 ```
 
+## Tips
+### About recv/send and forwarder timeout
+If you access web sites, set the timeout value shorter.
+```
+./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 10 -C 10
+```
+
+If you access web sites via tor, set the timeout value a little longer.
+```
+./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 30 -C 30
+```
+
+If you access ssh server, set the forwarder timeout value longer.
+```
+./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 10 -C 300
+```
+Note: The forwarder timeout countdown is reset every time data transfer. In other words, the connection is maintained as long as data transfer continues.
+
 ## Notes
 ### How to change HTTP Request Header Key and Value
 Note: There are characters that cannot be used in the HTTP Request Header Key or Value.
