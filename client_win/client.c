@@ -741,14 +741,10 @@ static int get_digest_response(struct digest_parameters *param)
 {
 	int ret = 0;
 	int length = 0;
-	unsigned char tmp1[17];
-	unsigned char tmp2[33];
-	unsigned char tmp3[1000];
-	unsigned char tmp4[150];
-	ZeroMemory(&tmp1, 17);
-	ZeroMemory(&tmp2, 33);
-	ZeroMemory(&tmp3, 1000);
-	ZeroMemory(&tmp4, 150);
+	unsigned char *tmp1 = (unsigned char *)calloc(17, sizeof(unsigned char));
+	unsigned char *tmp2 = (unsigned char *)calloc(33, sizeof(unsigned char));
+	unsigned char *tmp3 = (unsigned char *)calloc(1000, sizeof(unsigned char));
+	unsigned char *tmp4 = (unsigned char *)calloc(150, sizeof(unsigned char));
 
 
 	// cnonce
@@ -764,12 +760,12 @@ static int get_digest_response(struct digest_parameters *param)
 		ret = snprintf((char *)tmp2+i*16, 17, "%02x%02x%02x%02x%02x%02x%02x%02x\n", tmp1[i*8+0], tmp1[i*8+1], tmp1[i*8+2], tmp1[i*8+3], tmp1[i*8+4], tmp1[i*8+5], tmp1[i*8+6], tmp1[i*8+7]);
 	};
 
-	ret = encode_base64((const unsigned char *)&tmp2, 32, (unsigned char *)&param->cnonce, 200);
+	ret = encode_base64((const unsigned char *)tmp2, 32, (unsigned char *)&param->cnonce, 200);
 
 	// cnonce-prime
 	if(param->nonce_prime != NULL){
-		ZeroMemory(&tmp1, 17);
-		ZeroMemory(&tmp2, 33);
+		ZeroMemory(tmp1, 17);
+		ZeroMemory(tmp2, 33);
 		ret = RAND_bytes((unsigned char *)tmp1, 16);
 		if(ret != 1){
 #ifdef _DEBUG
@@ -782,7 +778,7 @@ static int get_digest_response(struct digest_parameters *param)
 			ret = snprintf((char *)tmp2+i*16, 17, "%02x%02x%02x%02x%02x%02x%02x%02x\n", tmp1[i*8+0], tmp1[i*8+1], tmp1[i*8+2], tmp1[i*8+3], tmp1[i*8+4], tmp1[i*8+5], tmp1[i*8+6], tmp1[i*8+7]);
 		};
 
-		ret = encode_base64((const unsigned char *)&tmp2, 32, (unsigned char *)&param->cnonce_prime, 200);
+		ret = encode_base64((const unsigned char *)tmp2, 32, (unsigned char *)&param->cnonce_prime, 200);
 	}
 
 
@@ -790,7 +786,7 @@ static int get_digest_response(struct digest_parameters *param)
 		// A1 MD5(username:realm:password):nonce-prime:cnonce-prime
 		length = strlen(param->username) + strlen(param->realm) + strlen(param->password) + 2;	// 2 colon
 		ret = snprintf((char *)tmp3, length+1, "%s:%s:%s", param->username, param->realm, param->password);
-		ret = get_md5_hash((const unsigned char *)&tmp3, length, (unsigned char *)&tmp4, 150);
+		ret = get_md5_hash((const unsigned char *)tmp3, length, (unsigned char *)tmp4, 150);
 		if(ret == -1){
 #ifdef _DEBUG
 			printf("[E] A1-1 get_md5_hash error\n");
@@ -798,7 +794,7 @@ static int get_digest_response(struct digest_parameters *param)
 			return -1;
 		}
 
-		length = strlen((const char *)&tmp4) + strlen(param->nonce_prime) + strlen(param->cnonce_prime) + 2;	// 2 colon
+		length = strlen((const char *)tmp4) + strlen(param->nonce_prime) + strlen(param->cnonce_prime) + 2;	// 2 colon
 		ret = snprintf(param->a1, length+1, "%s:%s:%s", tmp4, param->nonce_prime, param->cnonce_prime);
 		ret = get_md5_hash((const unsigned char *)&(param->a1), length, (unsigned char *)&(param->a1_hash), 150);
 		if(ret == -1){
@@ -911,8 +907,8 @@ static int get_digest_response(struct digest_parameters *param)
 	}else if(!strncmp(param->algorithm, "SHA-256-sess", strlen("SHA-256-sess"))){
 		// A1 SHA-256(username:realm:password):nonce-prime:cnonce-prime
 		length = strlen(param->username) + strlen(param->realm) + strlen(param->password) + 2;	// 2 colon
-		ret = snprintf((char *)&tmp3, length+1, "%s:%s:%s", param->username, param->realm, param->password);
-		ret = get_sha_256_hash((const unsigned char *)&tmp3, length, (unsigned char *)&tmp4, 150);
+		ret = snprintf((char *)tmp3, length+1, "%s:%s:%s", param->username, param->realm, param->password);
+		ret = get_sha_256_hash((const unsigned char *)tmp3, length, (unsigned char *)tmp4, 150);
 		if(ret == -1){
 #ifdef _DEBUG
 			printf("[E] A1-1 get_sha_256_hash error\n");
@@ -920,7 +916,7 @@ static int get_digest_response(struct digest_parameters *param)
 			return -1;
 		}
 
-		length = strlen((const char *)&tmp4) + strlen(param->nonce_prime) + strlen(param->cnonce_prime) + 2;	// 2 colon
+		length = strlen((const char *)tmp4) + strlen(param->nonce_prime) + strlen(param->cnonce_prime) + 2;	// 2 colon
 		ret = snprintf(param->a1, length+1, "%s:%s:%s", tmp4, param->nonce_prime, param->cnonce_prime);
 		ret = get_sha_256_hash((const unsigned char *)&(param->a1), length, (unsigned char *)&(param->a1_hash), 150);
 		if(ret == -1){
@@ -1033,8 +1029,8 @@ static int get_digest_response(struct digest_parameters *param)
 	}else if(!strncmp(param->algorithm, "SHA-512-256-sess", strlen("SHA-512-256-sess"))){
 		// A1 SHA-512-256(username:realm:password):nonce-prime:cnonce-prime
 		length = strlen(param->username) + strlen(param->realm) + strlen(param->password) + 2;	// 2 colon
-		ret = snprintf((char *)&tmp3, length+1, "%s:%s:%s", param->username, param->realm, param->password);
-		ret = get_sha_512_256_hash((const unsigned char *)&tmp3, length, (unsigned char *)&tmp4, 150);
+		ret = snprintf((char *)tmp3, length+1, "%s:%s:%s", param->username, param->realm, param->password);
+		ret = get_sha_512_256_hash((const unsigned char *)tmp3, length, (unsigned char *)tmp4, 150);
 		if(ret == -1){
 #ifdef _DEBUG
 			printf("[E] A1-1 get_sha_512_256_hash error\n");
@@ -1042,7 +1038,7 @@ static int get_digest_response(struct digest_parameters *param)
 			return -1;
 		}
 
-		length = strlen((const char *)&tmp4) + strlen(param->nonce_prime) + strlen(param->cnonce_prime) + 2;	// 2 colon
+		length = strlen((const char *)tmp4) + strlen(param->nonce_prime) + strlen(param->cnonce_prime) + 2;	// 2 colon
 		ret = snprintf(param->a1, length+1, "%s:%s:%s", tmp4, param->nonce_prime, param->cnonce_prime);
 		ret = get_sha_512_256_hash((const unsigned char *)&(param->a1), length, (unsigned char *)&(param->a1_hash), 150);
 		if(ret == -1){
@@ -1514,33 +1510,27 @@ static int ntowfv2(const char *user, const char *password, const char *userdom, 
 	int password_length = 0;
 	int password_utf16le_length = 0;
 	int password_utf16le_md4_length = 0;
-	unsigned char password_utf16le[1000];
-	unsigned char password_utf16le_md4[100];
-	ZeroMemory(&password_utf16le, 1000);
-	ZeroMemory(&password_utf16le_md4,16);
+	unsigned char *password_utf16le = (unsigned char *)calloc(1000, sizeof(unsigned char));
+	unsigned char *password_utf16le_md4 = (unsigned char *)calloc(100, sizeof(unsigned char));
 
 	int user_length = strlen(user);
 	int userdom_length = strlen(userdom);
 	int user_upper_userdom_length = 0;
 	int user_upper_userdom_utf16le_length = 0;
-	char user_upper[256];
-	char user_upper_userdom[1000];
-	unsigned char user_upper_userdom_utf16le[2000];
+	char *user_upper = (char *)calloc(256, sizeof(char));
+	char *user_upper_userdom = (char *)calloc(1000, sizeof(char));
+	unsigned char *user_upper_userdom_utf16le = (unsigned char *)calloc(2000, sizeof(unsigned char));
 	char *pos = NULL;
-	ZeroMemory(&user_upper, 256);
-	ZeroMemory(&user_upper_userdom, 1000);
-	ZeroMemory(&user_upper_userdom_utf16le, 2000);
 
 	int response_key_length = 0;
-	unsigned char response_key[16];
-	ZeroMemory(&response_key, 16);
+	unsigned char *response_key = (unsigned char *)calloc(16, sizeof(unsigned char));
 
 
 	if(forward_proxy_nthash_hexstring == NULL){
 		password_length = strlen(password);
 
 		// UNICODE(Passwd)
-		ret = convert_utf8_to_utf16(password, (char *)&password_utf16le, 1000);
+		ret = convert_utf8_to_utf16(password, (char *)password_utf16le, 1000);
 		if(ret == -1){
 #ifdef _DEBUG
 			printf("[E] convert_utf8_to_utf16 error\n");
@@ -1555,7 +1545,7 @@ static int ntowfv2(const char *user, const char *password, const char *userdom, 
 #endif
 
 		// MD4(UNICODE(Passwd))
-		ret = get_md4_hash((const unsigned char *)&password_utf16le, password_utf16le_length, (unsigned char *)&password_utf16le_md4, 16);
+		ret = get_md4_hash((const unsigned char *)password_utf16le, password_utf16le_length, (unsigned char *)password_utf16le_md4, 16);
 		if(ret == -1){
 #ifdef _DEBUG
 			printf("[E] get_md4_hash error\n");
@@ -1564,7 +1554,7 @@ static int ntowfv2(const char *user, const char *password, const char *userdom, 
 		}
 		password_utf16le_md4_length = ret;
 	}else{	// NTHash
-		ret = hexstring_to_array(forward_proxy_nthash_hexstring, strlen(forward_proxy_nthash_hexstring), (unsigned char *)&password_utf16le_md4, 16);
+		ret = hexstring_to_array(forward_proxy_nthash_hexstring, strlen(forward_proxy_nthash_hexstring), (unsigned char *)password_utf16le_md4, 16);
 		if(ret != 16){
 #ifdef _DEBUG
 			printf("[E] hexstring_to_array error\n");
@@ -1581,20 +1571,20 @@ static int ntowfv2(const char *user, const char *password, const char *userdom, 
 
 
 	// Uppercase(user)
-	ret = get_upper_string(user, strlen(user), (char *)&user_upper);
+	ret = get_upper_string(user, strlen(user), (char *)user_upper);
 
 	// ConcatenationOf(Uppercase(User), UserDom)
 	user_upper_userdom_length = 0;
-	pos = (char *)&user_upper_userdom;
+	pos = (char *)user_upper_userdom;
 
-	memcpy(pos, &user_upper, user_length);
+	memcpy(pos, user_upper, user_length);
 	user_upper_userdom_length += user_length;
 
 	memcpy(pos+user_upper_userdom_length, userdom, userdom_length);
 	user_upper_userdom_length += userdom_length;
 
 	// UNICODE(ConcatenationOf(Uppercase(User), UserDom))
-	ret = convert_utf8_to_utf16((const char *)&user_upper_userdom, (char *)&user_upper_userdom_utf16le, 2000);
+	ret = convert_utf8_to_utf16((const char *)user_upper_userdom, (char *)user_upper_userdom_utf16le, 2000);
 	if(ret == -1){
 #ifdef _DEBUG
 		printf("[E] convert_utf8_to_utf16 error\n");
@@ -1610,7 +1600,7 @@ static int ntowfv2(const char *user, const char *password, const char *userdom, 
 
 	// HMAC_MD5(K, M)	Indicates the computation of a 16-byte HMAC-keyed MD5 message digest of the byte string M using the key K.
 	// HMAC_MD5(MD4(UNICODE(Passwd)), UNICODE(ConcatenationOf(Uppercase(User), UserDom)))
-	ret = get_hmac_md5((const unsigned char *)&user_upper_userdom_utf16le, user_upper_userdom_utf16le_length, (const unsigned char *)password_utf16le_md4, password_utf16le_md4_length, (unsigned char *)&response_key, 16);
+	ret = get_hmac_md5((const unsigned char *)user_upper_userdom_utf16le, user_upper_userdom_utf16le_length, (const unsigned char *)password_utf16le_md4, password_utf16le_md4_length, (unsigned char *)response_key, 16);
 	if(ret == -1){
 #ifdef _DEBUG
 		printf("[E] get_hmac_md5 error\n");
@@ -1667,38 +1657,38 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 {
 	int ret = 0;
 
-	unsigned char response_key_nt[16];
-	unsigned char response_key_lm[16];
+	unsigned char *response_key_nt = (unsigned char *)calloc(16, sizeof(unsigned char));
+	unsigned char *response_key_lm = (unsigned char *)calloc(16, sizeof(unsigned char));
 	int response_key_nt_length = 0;
 	int response_key_lm_length = 0;
-	unsigned char server_challenge[8];
-	unsigned char client_challenge[8];
+	unsigned char *server_challenge = (unsigned char *)calloc(8, sizeof(unsigned char));
+	unsigned char *client_challenge = (unsigned char *)calloc(8, sizeof(unsigned char));
 
 	unsigned char responser_version = 1;
 	unsigned char hi_responser_version = 1;
 	int64_t timestamp = 0;
-	unsigned char server_name[1000];
+	unsigned char *server_name = (unsigned char *)calloc(1000, sizeof(unsigned char));
 	int server_name_length = 0;
 
-	unsigned char temp[2000];
+	unsigned char *temp = (unsigned char *)calloc(2000, sizeof(unsigned char));
 	int temp_length = 0;
 	unsigned char *pos = NULL;
 
-	unsigned char nt_proof_str[16];
+	unsigned char *nt_proof_str = (unsigned char *)calloc(16, sizeof(unsigned char));
 	int nt_proof_str_length = 0;
-	unsigned char tmp1[3000];
+	unsigned char *tmp1 = (unsigned char *)calloc(3000, sizeof(unsigned char));
 	int tmp1_length = 0;
 
-	unsigned char nt_challenge_response[2016];
+	unsigned char *nt_challenge_response = (unsigned char *)calloc(2016, sizeof(unsigned char));
 	int nt_challenge_response_length = 0;
 
-	unsigned char lm_challenge_response[24];
+	unsigned char *lm_challenge_response = (unsigned char *)calloc(24, sizeof(unsigned char));
 	int lm_challenge_response_length = 0;
-	unsigned char server_challenge_client_challenge[16];
-	unsigned char tmp2[16];
+	unsigned char *server_challenge_client_challenge = (unsigned char *)calloc(16, sizeof(unsigned char));
+	unsigned char *tmp2 = (unsigned char *)calloc(16, sizeof(unsigned char));
 	int tmp2_length = 0;
 
-	unsigned char session_base_key[16];
+	unsigned char *session_base_key = (unsigned char *)calloc(16, sizeof(unsigned char));
 	int session_base_key_length = 0;
 
 	int authenticate_message_length = 0;
@@ -1720,8 +1710,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 		return -1;
 	}else{
 		// ResponseKeyNT
-		ZeroMemory(&response_key_nt, 16);
-		ret = ntowfv2((const char *)forward_proxy_username, (const char *)forward_proxy_password, (const char *)forward_proxy_user_domainname, (unsigned char *)&response_key_nt, 16);
+		ret = ntowfv2((const char *)forward_proxy_username, (const char *)forward_proxy_password, (const char *)forward_proxy_user_domainname, (unsigned char *)response_key_nt, 16);
 		if(ret == -1){
 #ifdef _DEBUG
 			printf("[E] ntowfv2 error\n");
@@ -1732,8 +1721,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 
 
 		// ResponseKeyLM
-		ZeroMemory(&response_key_lm, 16);
-		ret = lmowfv2((const char *)forward_proxy_username, (const char *)forward_proxy_password, (const char *)forward_proxy_user_domainname, (unsigned char *)&response_key_lm, 16);
+		ret = lmowfv2((const char *)forward_proxy_username, (const char *)forward_proxy_password, (const char *)forward_proxy_user_domainname, (unsigned char *)response_key_lm, 16);
 		if(ret == -1){
 #ifdef _DEBUG
 			printf("[E] lmowfv2 error\n");
@@ -1744,8 +1732,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 
 
 		// ServerChallenge
-		ZeroMemory(&server_challenge, 8);
-		memcpy(&server_challenge, &challenge_message->server_challenge, 8);
+		memcpy(server_challenge, &challenge_message->server_challenge, 8);
 
 #ifdef _DEBUG
 //		printf("server_challenge:%d\n", 8);
@@ -1754,8 +1741,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 
 
 		// ClientChallenge
-		ZeroMemory(&client_challenge, 8);
-		ret = RAND_bytes((unsigned char *)&client_challenge, 8);
+		ret = RAND_bytes((unsigned char *)client_challenge, 8);
 		if(ret != 1){
 #ifdef _DEBUG
 			printf("[E] client_challenge generate error:%s\n", ERR_error_string(ERR_peek_last_error(), NULL));
@@ -1780,7 +1766,6 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 
 		// ServerName
 		// The NtChallengeResponseFields.NTLMv2_RESPONSE.NTLMv2_CLIENT_CHALLENGE.AvPairs field structure of the AUTHENTICATE_MESSAGE payload.
-		ZeroMemory(&server_name, 1000);
 		server_name_length = challenge_message->target_info_fields.target_info_len;
 		pos = (unsigned char *)challenge_message;
 		pos += challenge_message->target_info_fields.target_info_buffer_offset;
@@ -1791,18 +1776,17 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 #endif
 			return -1;
 		}
-		memcpy(&server_name, pos, server_name_length);
+		memcpy(server_name, pos, server_name_length);
 
 #ifdef _DEBUG
 //		printf("server_name:%d\n", server_name_length);
-//		print_bytes((unsigned char *)&server_name, server_name_length);
+//		print_bytes((unsigned char *)server_name, server_name_length);
 #endif
 
 
 		// temp
 		// ConcatenationOf(Responserversion, HiResponserversion, Z(6), Time, ClientChallenge, Z(4), ServerName, Z(4))
-		ZeroMemory(&temp, 2000);
-		pos = (unsigned char *)&temp;
+		pos = (unsigned char *)temp;
 		temp_length = 0;
 
 		memcpy(pos+temp_length, &responser_version, 1);
@@ -1816,42 +1800,40 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 		memcpy(pos+temp_length, &timestamp, 8);
 		temp_length += 8;
 
-		memcpy(pos+temp_length, &client_challenge, 8);
+		memcpy(pos+temp_length, client_challenge, 8);
 		temp_length += 8;
 
 		temp_length += 4;	// Z(4)
 
-		memcpy(pos+temp_length, &server_name, server_name_length);
+		memcpy(pos+temp_length, server_name, server_name_length);
 		temp_length += server_name_length;
 
 		temp_length += 4;	// Z(4)
 
 #ifdef _DEBUG
 //		printf("temp:%d\n", temp_length);
-//		print_bytes((unsigned char *)&temp, temp_length);
+//		print_bytes((unsigned char *)temp, temp_length);
 #endif
 
 
 		// NTProofStr
 		// ConcatenationOf(CHALLENGE_MESSAGE.ServerChallenge,temp)
-		ZeroMemory(&tmp1, 3000);
-		pos = (unsigned char *)&tmp1;
+		pos = (unsigned char *)tmp1;
 		tmp1_length = 0;
 
-		memcpy(pos+tmp1_length, &server_challenge, 8);
+		memcpy(pos+tmp1_length, server_challenge, 8);
 		tmp1_length += 8;
 
-		memcpy(pos+tmp1_length, &temp, temp_length);
+		memcpy(pos+tmp1_length, temp, temp_length);
 		tmp1_length += temp_length;
 
 #ifdef _DEBUG
 //		printf("tmp1:%d\n", tmp1_length);
-//		print_bytes((unsigned char *)&tmp1, tmp1_length);
+//		print_bytes((unsigned char *)tmp1, tmp1_length);
 #endif
 
 		// HMAC_MD5(ResponseKeyNT, ConcatenationOf(CHALLENGE_MESSAGE.ServerChallenge,temp))
-		ZeroMemory(&nt_proof_str, 16);
-		ret = get_hmac_md5((unsigned char *)&tmp1, tmp1_length, (unsigned char *)&response_key_nt, response_key_nt_length, (unsigned char *)&nt_proof_str, 16);
+		ret = get_hmac_md5((unsigned char *)tmp1, tmp1_length, (unsigned char *)response_key_nt, response_key_nt_length, (unsigned char *)nt_proof_str, 16);
 		if(ret == -1){
 #ifdef _DEBUG
 			printf("[E] get_hmac_md5 error\n");
@@ -1862,44 +1844,41 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 
 #ifdef _DEBUG
 //		printf("nt_proof_str:%d\n", nt_proof_str_length);
-//		print_bytes((unsigned char *)&nt_proof_str, nt_proof_str_length);
+//		print_bytes((unsigned char *)nt_proof_str, nt_proof_str_length);
 #endif
 
 
 		// NtChallengeResponse
 		// ConcatenationOf(NTProofStr, temp)
-		ZeroMemory(&nt_challenge_response, 2016);
-		pos = (unsigned char *)&nt_challenge_response;
+		pos = (unsigned char *)nt_challenge_response;
 		nt_challenge_response_length = 0;
 
-		memcpy(pos, &nt_proof_str, nt_proof_str_length);
+		memcpy(pos, nt_proof_str, nt_proof_str_length);
 		nt_challenge_response_length += nt_proof_str_length;
 
-		memcpy(pos+nt_proof_str_length, &temp, temp_length);
+		memcpy(pos+nt_proof_str_length, temp, temp_length);
 		nt_challenge_response_length += temp_length;
 
 #ifdef _DEBUG
 //		printf("nt_challenge_response:%d\n", nt_challenge_response_length);
-//		print_bytes((unsigned char *)&nt_challenge_response, nt_challenge_response_length);
+//		print_bytes((unsigned char *)nt_challenge_response, nt_challenge_response_length);
 #endif
 
 
 		// LmChallengeResponse
 		// ConcatenationOf(CHALLENGE_MESSAGE.ServerChallenge, ClientChallenge)
-		ZeroMemory(&server_challenge_client_challenge, 16);
-		pos = (unsigned char *)&server_challenge_client_challenge;
+		pos = (unsigned char *)server_challenge_client_challenge;
 
-		memcpy(pos, &server_challenge, 8);
-		memcpy(pos+8, &client_challenge, 8);
+		memcpy(pos, server_challenge, 8);
+		memcpy(pos+8, client_challenge, 8);
 
 #ifdef _DEBUG
 //		printf("server_challenge_client_challenge:%d\n", 16);
-//		print_bytes((unsigned char *)&server_challenge_client_challenge, 16);
+//		print_bytes((unsigned char *)server_challenge_client_challenge, 16);
 #endif
 
 		// HMAC_MD5(ResponseKeyLM, ConcatenationOf(CHALLENGE_MESSAGE.ServerChallenge, ClientChallenge))
-		ZeroMemory(&tmp2, 16);
-		ret = get_hmac_md5((unsigned char *)&server_challenge_client_challenge, 16, (unsigned char *)&response_key_lm, response_key_lm_length, (unsigned char *)&tmp2, 16);
+		ret = get_hmac_md5((unsigned char *)server_challenge_client_challenge, 16, (unsigned char *)response_key_lm, response_key_lm_length, (unsigned char *)tmp2, 16);
 		if(ret == -1){
 #ifdef _DEBUG
 			printf("[E] get_hmac_md5 error\n");
@@ -1910,30 +1889,28 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 
 #ifdef _DEBUG
 //		printf("tmp2:%d\n", tmp2_length);
-//		print_bytes((unsigned char *)&tmp2, tmp2_length);
+//		print_bytes((unsigned char *)tmp2, tmp2_length);
 #endif
 
 		// ConcatenationOf(HMAC_MD5(ResponseKeyLM, ConcatenationOf(CHALLENGE_MESSAGE.ServerChallenge, ClientChallenge)), ClientChallenge)
-		ZeroMemory(&lm_challenge_response, 24);
-		pos = (unsigned char *)&lm_challenge_response;
+		pos = (unsigned char *)lm_challenge_response;
 		lm_challenge_response_length = 0;
 
-		memcpy(pos, &tmp2, tmp2_length);
+		memcpy(pos, tmp2, tmp2_length);
 		lm_challenge_response_length += tmp2_length;
 
-		memcpy(pos+tmp2_length, &client_challenge, 8);
+		memcpy(pos+tmp2_length, client_challenge, 8);
 		lm_challenge_response_length += 8;
 
 #ifdef _DEBUG
 //		printf("lm_challenge_response:%d\n", lm_challenge_response_length);
-//		print_bytes((unsigned char *)&lm_challenge_response, lm_challenge_response_length);
+//		print_bytes((unsigned char *)lm_challenge_response, lm_challenge_response_length);
 #endif
 
 
 		// SessionBaseKey
 		// HMAC_MD5(ResponseKeyNT, NTProofStr)
-		ZeroMemory(&session_base_key, 16);
-		ret = get_hmac_md5((unsigned char *)&nt_proof_str, nt_proof_str_length, (unsigned char *)&response_key_nt, response_key_nt_length, (unsigned char *)&session_base_key, 16);
+		ret = get_hmac_md5((unsigned char *)nt_proof_str, nt_proof_str_length, (unsigned char *)response_key_nt, response_key_nt_length, (unsigned char *)session_base_key, 16);
 		if(ret == -1){
 #ifdef _DEBUG
 			printf("[E] get_hmac_md5 error\n");
@@ -1944,7 +1921,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 
 #ifdef _DEBUG
 //		printf("session_base_key:%d\n", session_base_key_length);
-//		print_bytes((unsigned char *)&session_base_key, session_base_key_length);
+//		print_bytes((unsigned char *)session_base_key, session_base_key_length);
 #endif
 
 
@@ -1964,7 +1941,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 		authenticate_message->lm_challenge_response_fields.lm_challenge_response_max_len = lm_challenge_response_length;
 		authenticate_message->lm_challenge_response_fields.lm_challenge_response_buffer_offset = 0x40;
 
-		memcpy(pos+offset, &lm_challenge_response, lm_challenge_response_length);
+		memcpy(pos+offset, lm_challenge_response, lm_challenge_response_length);
 		offset += lm_challenge_response_length;
 
 		// authenticate_message NtChallengeResponseFields
@@ -1972,7 +1949,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 		authenticate_message->nt_challenge_response_fields.nt_challenge_response_max_len = nt_challenge_response_length;
 		authenticate_message->nt_challenge_response_fields.nt_challenge_response_buffer_offset = offset;
 
-		memcpy(pos+offset, &nt_challenge_response, nt_challenge_response_length);
+		memcpy(pos+offset, nt_challenge_response, nt_challenge_response_length);
 		offset += nt_challenge_response_length;
 
 		// authenticate_message DomainNameFields
