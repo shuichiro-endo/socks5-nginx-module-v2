@@ -753,7 +753,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 		printf("[E] RAND_bytes error:%s.\n", ERR_error_string(ERR_peek_last_error(), NULL));
 #endif
-		return -1;
+		goto error;
 	}
 
 	for(int i=0; i*8<16; i++){
@@ -771,7 +771,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] RAND_bytes error:%s.\n", ERR_error_string(ERR_peek_last_error(), NULL));
 #endif
-			return -1;
+			goto error;
 		}
 
 		for(int i=0; i*8<16; i++){
@@ -791,7 +791,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] A1-1 get_md5_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 		length = strlen((const char *)tmp4) + strlen(param->nonce_prime) + strlen(param->cnonce_prime) + 2;	// 2 colon
@@ -801,7 +801,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] A1-2 get_md5_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 		if(!strncmp(param->qop, "auth-int", strlen("auth-int"))){	// auth-int
@@ -812,7 +812,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2-1 get_md5_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 
 			length = strlen(param->method) + strlen(param->uri) + strlen(param->entity_body_hash) + 2;	// 2 colon
@@ -822,7 +822,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2-2 get_md5_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 		}else{	// auth
 			// A2 method:uri
@@ -833,7 +833,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2 get_md5_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 		}
 
@@ -845,7 +845,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] response get_md5_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 	}else if(!strncmp(param->algorithm, "MD5", strlen("MD5"))){
@@ -857,7 +857,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] A1 get_md5_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 		if(!strncmp(param->qop, "auth-int", strlen("auth-int"))){	// auth-int
@@ -868,7 +868,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2-1 get_md5_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 
 			length = strlen(param->method) + strlen(param->uri) + strlen(param->entity_body_hash) + 2;	// 2 colon
@@ -878,7 +878,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2-2 get_md5_hash error\n");
 #endif
-				return -1;
+				goto error;;
 			}
 		}else{	// auth
 			// A2 method:uri
@@ -889,7 +889,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2 get_md5_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 		}
 
@@ -901,7 +901,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] response get_md5_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 	}else if(!strncmp(param->algorithm, "SHA-256-sess", strlen("SHA-256-sess"))){
@@ -913,7 +913,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] A1-1 get_sha_256_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 		length = strlen((const char *)tmp4) + strlen(param->nonce_prime) + strlen(param->cnonce_prime) + 2;	// 2 colon
@@ -923,7 +923,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] A1-2 get_sha_256_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 		if(!strncmp(param->qop, "auth-int", strlen("auth-int"))){	// auth-int
@@ -934,7 +934,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2-1 get_sha_256_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 
 			length = strlen(param->method) + strlen(param->uri) + strlen(param->entity_body_hash) + 2;	// 2 colon
@@ -944,7 +944,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2-2 get_sha_256_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 		}else{	// auth
 			// A2 method:uri
@@ -955,7 +955,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2 get_sha_256_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 		}
 
@@ -967,7 +967,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] response get_sha_256_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 	}else if(!strncmp(param->algorithm, "SHA-256", strlen("SHA-256"))){
@@ -979,7 +979,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] A1 get_sha_256_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 		if(!strncmp(param->qop, "auth-int", strlen("auth-int"))){	// auth-int
@@ -990,7 +990,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2-1 get_sha_256_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 
 			length = strlen(param->method) + strlen(param->uri) + strlen(param->entity_body_hash) + 2;	// 2 colon
@@ -1000,7 +1000,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2-2 get_sha_256_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 		}else{	// auth
 			// A2 method:uri
@@ -1011,7 +1011,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2 get_sha_256_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 		}
 
@@ -1023,7 +1023,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] response get_sha_256_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 	}else if(!strncmp(param->algorithm, "SHA-512-256-sess", strlen("SHA-512-256-sess"))){
@@ -1035,7 +1035,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] A1-1 get_sha_512_256_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 		length = strlen((const char *)tmp4) + strlen(param->nonce_prime) + strlen(param->cnonce_prime) + 2;	// 2 colon
@@ -1045,7 +1045,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] A1-2 get_sha_512_256_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 		if(!strncmp(param->qop, "auth-int", strlen("auth-int"))){	// auth-int
@@ -1056,7 +1056,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2-1 get_sha_512_256_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 
 			length = strlen(param->method) + strlen(param->uri) + strlen(param->entity_body_hash) + 2;	// 2 colon
@@ -1066,7 +1066,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2-2 get_sha_512_256_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 		}else{	// auth
 			// A2 method:uri
@@ -1077,7 +1077,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2 get_sha_512_256_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 		}
 
@@ -1089,7 +1089,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] response get_sha_512_256_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 	}else if(!strncmp(param->algorithm, "SHA-512-256", strlen("SHA-512-256"))){
@@ -1101,7 +1101,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] A1 get_sha_512_256_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 		if(!strncmp(param->qop, "auth-int", strlen("auth-int"))){	// auth-int
@@ -1112,7 +1112,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2-1 get_sha_512_256_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 
 			length = strlen(param->method) + strlen(param->uri) + strlen(param->entity_body_hash) + 2;	// 2 colon
@@ -1122,7 +1122,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2-2 get_sha_512_256_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 		}else{	// auth
 			// A2 method:uri
@@ -1133,7 +1133,7 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 				printf("[E] A2 get_sha_512_256_hash error\n");
 #endif
-				return -1;
+				goto error;
 			}
 		}
 
@@ -1145,17 +1145,28 @@ static int get_digest_response(struct digest_parameters *param)
 #ifdef _DEBUG
 			printf("[E] response get_sha_512_256_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 
 	}else{
 #ifdef _DEBUG
 		printf("[E] Not implemented\n");
 #endif
-		return -1;
+		goto error;
 	}
 
+	free(tmp1);
+	free(tmp2);
+	free(tmp3);
+	free(tmp4);
 	return 0;
+
+error:
+	free(tmp1);
+	free(tmp2);
+	free(tmp3);
+	free(tmp4);
+	return -1;
 }
 
 
@@ -1535,7 +1546,7 @@ static int ntowfv2(const char *user, const char *password, const char *userdom, 
 #ifdef _DEBUG
 			printf("[E] convert_utf8_to_utf16 error\n");
 #endif
-			return -1;
+			goto error;
 		}
 		password_utf16le_length = ret;
 
@@ -1550,7 +1561,7 @@ static int ntowfv2(const char *user, const char *password, const char *userdom, 
 #ifdef _DEBUG
 			printf("[E] get_md4_hash error\n");
 #endif
-			return -1;
+			goto error;
 		}
 		password_utf16le_md4_length = ret;
 	}else{	// NTHash
@@ -1559,7 +1570,7 @@ static int ntowfv2(const char *user, const char *password, const char *userdom, 
 #ifdef _DEBUG
 			printf("[E] hexstring_to_array error\n");
 #endif
-			return -1;
+			goto error;
 		}
 		password_utf16le_md4_length = ret;
 	}
@@ -1589,7 +1600,7 @@ static int ntowfv2(const char *user, const char *password, const char *userdom, 
 #ifdef _DEBUG
 		printf("[E] convert_utf8_to_utf16 error\n");
 #endif
-		return -1;
+		goto error;
 	}
 	user_upper_userdom_utf16le_length = ret;
 
@@ -1605,7 +1616,7 @@ static int ntowfv2(const char *user, const char *password, const char *userdom, 
 #ifdef _DEBUG
 		printf("[E] get_hmac_md5 error\n");
 #endif
-		return -1;
+		goto error;
 	}
 	response_key_length = ret;
 
@@ -1618,12 +1629,27 @@ static int ntowfv2(const char *user, const char *password, const char *userdom, 
 #ifdef _DEBUG
 		printf("[E] output_size error\n");
 #endif
-		return -1;
+		goto error;
 	}
 
 	memcpy(output, response_key, response_key_length);
 
+	free(password_utf16le);
+	free(password_utf16le_md4);
+	free(user_upper);
+	free(user_upper_userdom);
+	free(user_upper_userdom_utf16le);
+	free(response_key);
 	return response_key_length;
+
+error:
+	free(password_utf16le);
+	free(password_utf16le_md4);
+	free(user_upper);
+	free(user_upper_userdom);
+	free(user_upper_userdom_utf16le);
+	free(response_key);
+	return -1;
 }
 
 
@@ -1707,7 +1733,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 #ifdef _DEBUG
 		printf("[E] Not implemented\n");
 #endif
-		return -1;
+		goto error;
 	}else{
 		// ResponseKeyNT
 		ret = ntowfv2((const char *)forward_proxy_username, (const char *)forward_proxy_password, (const char *)forward_proxy_user_domainname, (unsigned char *)response_key_nt, 16);
@@ -1715,7 +1741,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 #ifdef _DEBUG
 			printf("[E] ntowfv2 error\n");
 #endif
-			return -1;
+			goto error;
 		}
 		response_key_nt_length = ret;
 
@@ -1726,7 +1752,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 #ifdef _DEBUG
 			printf("[E] lmowfv2 error\n");
 #endif
-			return -1;
+			goto error;
 		}
 		response_key_lm_length = ret;
 
@@ -1746,7 +1772,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 #ifdef _DEBUG
 			printf("[E] client_challenge generate error:%s\n", ERR_error_string(ERR_peek_last_error(), NULL));
 #endif
-			return -1;
+			goto error;
 		}
 
 #ifdef _DEBUG
@@ -1774,7 +1800,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 #ifdef _DEBUG
 			printf("[E] server_name_length error\n");
 #endif
-			return -1;
+			goto error;
 		}
 		memcpy(server_name, pos, server_name_length);
 
@@ -1838,7 +1864,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 #ifdef _DEBUG
 			printf("[E] get_hmac_md5 error\n");
 #endif
-			return -1;
+			goto error;
 		}
 		nt_proof_str_length = ret;
 
@@ -1883,7 +1909,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 #ifdef _DEBUG
 			printf("[E] get_hmac_md5 error\n");
 #endif
-			return -1;
+			goto error;
 		}
 		tmp2_length = ret;
 
@@ -1915,7 +1941,7 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 #ifdef _DEBUG
 			printf("[E] get_hmac_md5 error\n");
 #endif
-			return -1;
+			goto error;
 		}
 		session_base_key_length = ret;
 
@@ -2023,7 +2049,36 @@ static int generate_response_ntlmv2(struct challenge_message *challenge_message,
 #endif
 	}
 
+	free(response_key_nt);
+	free(response_key_lm);
+	free(server_challenge);
+	free(client_challenge);
+	free(server_name);
+	free(temp);
+	free(nt_proof_str);
+	free(tmp1);
+	free(nt_challenge_response);
+	free(lm_challenge_response);
+	free(server_challenge_client_challenge);
+	free(tmp2);
+	free(session_base_key);
 	return authenticate_message_length;
+
+error:
+	free(response_key_nt);
+	free(response_key_lm);
+	free(server_challenge);
+	free(client_challenge);
+	free(server_name);
+	free(temp);
+	free(nt_proof_str);
+	free(tmp1);
+	free(nt_challenge_response);
+	free(lm_challenge_response);
+	free(server_challenge_client_challenge);
+	free(tmp2);
+	free(session_base_key);
+	return -1;
 }
 
 
@@ -2070,9 +2125,7 @@ static int get_base64_kerberos_token(char *spn, char *b64_kerberos_token, int b6
 #ifdef _DEBUG
 		printf("[E] InitializeSecurityContext error:%d\n", security_status);
 #endif
-		free(p_out_buf);
-		free(p_in_buf);
-		return -1;
+		goto error;
 	}
 
 	if(security_status == SEC_I_COMPLETE_AND_CONTINUE || security_status == SEC_I_COMPLETE_NEEDED){
@@ -2081,9 +2134,7 @@ static int get_base64_kerberos_token(char *spn, char *b64_kerberos_token, int b6
 #ifdef _DEBUG
 			printf("[E] CompleteAuthToken error:%d\n", security_status);
 #endif
-			free(p_out_buf);
-			free(p_in_buf);
-			return -1;
+			goto error;
 		}
 	}
 
@@ -2093,17 +2144,19 @@ static int get_base64_kerberos_token(char *spn, char *b64_kerberos_token, int b6
 #ifdef _DEBUG
 			printf("[E] encode_base64 error\n");
 #endif
-			free(p_out_buf);
-			free(p_in_buf);
-			return -1;
+			goto error;
 		}
 		b64_kerberos_token_length = ret;
 	}
 
 	free(p_out_buf);
 	free(p_in_buf);
-
 	return b64_kerberos_token_length;
+
+error:
+	free(p_out_buf);
+	free(p_in_buf);
+	return -1;
 }
 
 
