@@ -448,6 +448,23 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     sudo tail -f /var/log/nginx/error.log
     ```
 
+### How to improve connection
+When accessing heavy websites such as google, the connection is sometimes bad.
+
+Increasing the value of worker_processes (nginx.conf) may improve the connection.
+- server
+    1. modify /etc/nginx/nginx.conf file
+    ```
+    ...
+    #worker_processes auto;
+    worker_processes 10;
+    ...
+    ```
+    2. restart nginx server
+    ```
+    sudo systemctl restart nginx
+    ```
+
 ### How to reduce number of connections in CLOSE_WAIT state
 You can check number of connections in CLOSE_WAIT state by running the following command.
 ```
@@ -630,7 +647,7 @@ If you access web sites, set the timeout value shorter.
 
 If you access web sites via tor, set the timeout value a little longer.
 ```
-./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 30 -C 30
+./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 30 -C 30 -t
 ```
 
 If you access ssh server, set the forwarder timeout value longer.
