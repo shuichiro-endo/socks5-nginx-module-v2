@@ -35,6 +35,7 @@ COPY server_https.crt /etc/nginx/ssl/
 RUN chmod 600 /etc/nginx/ssl/server_https_private.key \
     && chmod 644 /etc/nginx/ssl/server_https.crt
 COPY ssl.conf /etc/nginx/conf.d/
+RUN sed -i -e 's/worker_processes auto;/worker_processes 10;/g' /etc/nginx/nginx.conf
 
 
 # build socks nginx module
