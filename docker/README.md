@@ -20,7 +20,54 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     openssl req -x509 -days 3650 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -subj /CN=localhost -outform PEM -keyout server_socks5_private.key -out server_socks5.crt
     openssl x509 -text -noout -in server_socks5.crt
     ```
-    3. docker build and run
+    3. modify Dockerfile and startup.sh files (if you do not use tor)  
+    Note: Tor is installed by default in a docker image. If you do not use tor, modify the following files.
+    - modify Dockerfile (comment out)
+        ```
+        ...
+        
+        # apt
+        RUN apt-get update \
+            && apt-get install -y \
+                vim \
+                git \
+                wget \
+                gcc \
+                make \
+                nginx \
+                libpcre3 \
+                libpcre3-dev \
+                zlib1g \
+                zlib1g-dev \
+                openssl \
+                libssl-dev \
+                cron \
+                cowsay \
+        #        tor \
+            && apt-get clean \
+            && rm -rf /var/lib/apt/lists/*
+        
+        ...
+
+        # tor
+        WORKDIR /root
+        #COPY torrc /etc/tor/
+        
+        ...
+        ```
+        - startup.sh (comment out)
+        ```
+        set -e
+        
+        /root/script/generate_index.sh
+        
+        /etc/init.d/cron start
+        
+        #/etc/init.d/tor start
+        
+        /usr/sbin/nginx -g "daemon off;"
+        ```
+    4. docker build and run
     ```
     cd socks5-nginx-module-v2/docker
     docker build -t socks5-nginx-image .
