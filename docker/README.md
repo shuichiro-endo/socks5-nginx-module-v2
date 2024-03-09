@@ -74,6 +74,37 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     docker run -d -p 443:443 --name socks5-nginx socks5-nginx-image
     docker ps -a
     ```
+    5. access to the https web server (nginx server in the docker container)
+    ```
+    > curl -s -k https://localhost
+    
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <title>socks5-nginx-module test</title>
+    </head>
+    
+    <body bgcolor="#181818">
+    <span style="font-family:monospace;font-size:14px;line-height:1.1ex;color:#c0c0c0;">
+    <pre>
+    
+    
+     __________________<br>
+    < I &#9829; socks5 ><br>
+     ------------------<br>
+            \   ^__^<br>
+             \  (oo)\_______<br>
+                (__)\       )\/\<br>
+                    ||----w |<br>
+                    ||     ||<br>
+    
+    
+    </pre>
+    </span>
+    </body>
+    </html>
+    ```
 
 ## Usage
 - client
