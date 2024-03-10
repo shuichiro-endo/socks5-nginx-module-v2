@@ -548,19 +548,19 @@ password:pàßßw0rð@
 [I] [server <- fproxy] Recv http response from forward proxy
 [I] Forward proxy connection established
 [I] [server -> target] Try HTTPS connection (SSL_connect)
-[I] [server <- target] Succeed HTTPS connection (SSL_connect)
+[I] [server <- target] Succeeded HTTPS connection (SSL_connect)
 [I] [server -> target] Send http request
 [I] [server <- target] count:1 rec:9
 [I] [server <- target] Server Socks5 OK
 [I] [server -> target] Try Socks5 over TLS connection (BIO_do_handshake)
-[I] [server <- target] Succeed Socks5 over TLS connection (BIO_do_handshake)
-[I] [client -> server] Receive selection request:4 bytes
+[I] [server <- target] Succeeded Socks5 over TLS connection (BIO_do_handshake)
+[I] [client -> server] Recv selection request:4 bytes
 [I] [server -> target] Send selection request:4 bytes
-[I] [server <- target] Receive selection response:2 bytes
+[I] [server <- target] Recv selection response:2 bytes
 [I] [client <- server] Send selection response:2 bytes
-[I] [client -> server] Receive socks request:21 bytes
+[I] [client -> server] Recv socks request:21 bytes
 [I] [server -> target] Send socks request:21 bytes
-[I] [server <- target] Receive socks response:10 bytes
+[I] [server <- target] Recv socks response:10 bytes
 [I] [client <- server] Send socks response:10 bytes
 [I] Forwarder
 [I] forwarder_bio recv error:0
@@ -619,16 +619,16 @@ This is not a problem.
 [I] [server -> target] Connecting ip:127.0.0.1 port:443
 [I] [server <- target] Connected to target socks5 server
 [I] [server -> target] Try HTTPS connection (SSL_connect)
-[I] [server <- target] Succeed HTTPS connection (SSL_connect)
+[I] [server <- target] Succeeded HTTPS connection (SSL_connect)
 [I] [server -> target] Send http request
 [I] [server <- target] count:1 rec:9
 [I] [server <- target] Server Socks5 OK
 [I] [server -> target] Try Socks5 over TLS connection (BIO_do_handshake)
-[I] [server <- target] Succeed Socks5 over TLS connection (BIO_do_handshake)
-[I] [client -> server] Receive selection request:4 bytes
+[I] [server <- target] Succeeded Socks5 over TLS connection (BIO_do_handshake)
+[I] [client -> server] Recv selection request:4 bytes
 [I] [server -> target] Send selection request:4 bytes
 [E] BIO_read error:0:error:0A000418:SSL routines::tlsv1 alert unknown ca
-[E] [server <- target] Receive selection response
+[E] [server <- target] Recv selection response
 ```
 
 - server

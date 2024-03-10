@@ -4068,7 +4068,7 @@ static int worker(void *ptr)
 		}
 
 #ifdef _DEBUG
-		printf("[I] [server <- target] Succeed HTTPS connection (SSL_connect)\n");
+		printf("[I] [server <- target] Succeeded HTTPS connection (SSL_connect)\n");
 #endif
 
 	}else if(forward_proxy_flag == 2){	// https forward proxy
@@ -4144,7 +4144,7 @@ static int worker(void *ptr)
 		}
 
 #ifdef _DEBUG
-		printf("[I] [server <- fproxy] Succeed HTTPS connection (SSL_connect)\n");
+		printf("[I] [server <- fproxy] Succeeded HTTPS connection (SSL_connect)\n");
 #endif
 	}else{	// no forward proxy
 		// SSL Initialize
@@ -4218,7 +4218,7 @@ static int worker(void *ptr)
 		}
 
 #ifdef _DEBUG
-		printf("[I] [server <- target] Succeed HTTPS connection (SSL_connect)\n");
+		printf("[I] [server <- target] Succeeded HTTPS connection (SSL_connect)\n");
 #endif
 
 	}
@@ -4382,19 +4382,19 @@ static int worker(void *ptr)
 		goto error;
 	}
 #ifdef _DEBUG
-	printf("[I] [server <- target] Succeed Socks5 over TLS connection (BIO_do_handshake)\n");
+	printf("[I] [server <- target] Succeeded Socks5 over TLS connection (BIO_do_handshake)\n");
 #endif
 
 
 	// socks selection_request	client -> server
 	if((rec = recv_data(client_sock, buffer, BUFFER_SIZE, tv_sec, tv_usec)) <= 0){
 #ifdef _DEBUG
-		printf("[E] [client -> server] Receive selection request\n");
+		printf("[E] [client -> server] Recv selection request\n");
 #endif
 		goto error;
 	}
 #ifdef _DEBUG
-	printf("[I] [client -> server] Receive selection request:%d bytes\n", rec);
+	printf("[I] [client -> server] Recv selection request:%d bytes\n", rec);
 #endif
 
 
@@ -4423,12 +4423,12 @@ static int worker(void *ptr)
 	}
 	if(rec != sizeof(struct selection_response)){
 #ifdef _DEBUG
-		printf("[E] [server <- target] Receive selection response\n");
+		printf("[E] [server <- target] Recv selection response\n");
 #endif
 		goto error;
 	}
 #ifdef _DEBUG
-	printf("[I] [server <- target] Receive selection response:%d bytes\n", rec);
+	printf("[I] [server <- target] Recv selection response:%d bytes\n", rec);
 #endif
 
 
@@ -4455,12 +4455,12 @@ static int worker(void *ptr)
 		rec = recv_data(client_sock, buffer, BUFFER_SIZE, tv_sec, tv_usec);
 		if(rec <= 0){
 #ifdef _DEBUG
-			printf("[E] [client -> server] Receive username password authentication request\n");
+			printf("[E] [client -> server] Recv username password authentication request\n");
 #endif
 			goto error;
 		}
 #ifdef _DEBUG
-		printf("[I] [client -> server] Receive username password authentication request:%d bytes\n", rec);
+		printf("[I] [client -> server] Recv username password authentication request:%d bytes\n", rec);
 #endif
 
 
@@ -4489,12 +4489,12 @@ static int worker(void *ptr)
 		}
 		if(rec <= 0){
 #ifdef _DEBUG
-			printf("[E] [server <- target] Receive username password authentication response\n");
+			printf("[E] [server <- target] Recv username password authentication response\n");
 #endif
 			goto error;
 		}
 #ifdef _DEBUG
-		printf("[I] [server <- target] Receive username password authentication response:%d bytes\n", rec);
+		printf("[I] [server <- target] Recv username password authentication response:%d bytes\n", rec);
 #endif
 
 
@@ -4516,12 +4516,12 @@ static int worker(void *ptr)
 	rec = recv_data(client_sock, buffer, BUFFER_SIZE, tv_sec, tv_usec);
 	if(rec <= 0){
 #ifdef _DEBUG
-		printf("[E] [client -> server] Receive socks request\n");
+		printf("[E] [client -> server] Recv socks request\n");
 #endif
 		goto error;
 	}
 #ifdef _DEBUG
-	printf("[I] [client -> server] Receive socks request:%d bytes\n", rec);
+	printf("[I] [client -> server] Recv socks request:%d bytes\n", rec);
 #endif
 
 
@@ -4550,12 +4550,12 @@ static int worker(void *ptr)
 	}
 	if(rec <= 0){
 #ifdef _DEBUG
-		printf("[E] [server <- target] Receive socks response\n");
+		printf("[E] [server <- target] Recv socks response\n");
 #endif
 		goto error;
 	}
 #ifdef _DEBUG
-	printf("[I] [server <- target] Receive socks response:%d bytes\n", rec);
+	printf("[I] [server <- target] Recv socks response:%d bytes\n", rec);
 #endif
 
 

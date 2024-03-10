@@ -865,12 +865,12 @@ static int do_socks5_handshake_tor_client(ngx_http_request_t *r, int tor_sock, c
 	rec = recv_data(r, tor_sock, buffer, BUFFER_SIZE, tv_sec, tv_usec);
 	if(rec <= 0){
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torclt] Receive selection response");
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torclt] Recv selection response");
 #endif
 		goto error;
 	}
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torclt] Receive selection response:%d bytes", rec);
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torclt] Recv selection response:%d bytes", rec);
 #endif
 	struct selection_response *selection_response = (struct selection_response *)buffer;
 	if(selection_response->method != 0x0){
@@ -943,12 +943,12 @@ static int do_socks5_handshake_tor_client(ngx_http_request_t *r, int tor_sock, c
 	rec = recv_data(r, tor_sock, buffer, BUFFER_SIZE, tv_sec, tv_usec);
 	if(rec <= 0){
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torclt] Receive socks response");
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server <- torclt] Recv socks response");
 #endif
 		goto error;
 	}
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torclt] Receive socks response:%d bytes", rec);
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [server <- torclt] Recv socks response:%d bytes", rec);
 #endif
 	struct socks_response *socks_response = (struct socks_response *)buffer;
 	if(socks_response->rep != 0x0){
@@ -1068,17 +1068,17 @@ static int worker(ngx_http_request_t *r, void *ptr)
 	
 	// socks selection_request
 #ifdef _DEBUG
-	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client -> server] Receive selection request");
+	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client -> server] Recv selection request");
 #endif
 	rec = recv_data_bio(r, client_sock, client_bio_socks5, buffer, BUFFER_SIZE, tv_sec, tv_usec);
 	if(rec <= 0){
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [client -> server] Receive selection request");
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [client -> server] Recv selection request");
 #endif
 		goto error;
 	}
 #ifdef _DEBUG
-	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client -> server] Receive selection request:%d bytes", rec);
+	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client -> server] Recv selection request:%d bytes", rec);
 #endif
 	struct selection_request *selection_request = (struct selection_request *)buffer;
 	unsigned char method = 0xFF;
@@ -1133,18 +1133,18 @@ static int worker(ngx_http_request_t *r, void *ptr)
 	if(method == 0x2){
 		// socks username_password_authentication_request
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client -> server] Receive username password authentication request");
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client -> server] Recv username password authentication request");
 #endif
 		bzero(buffer, BUFFER_SIZE+1);
 		rec = recv_data_bio(r, client_sock, client_bio_socks5, buffer, BUFFER_SIZE, tv_sec, tv_usec);
 		if(rec <= 0){
 #ifdef _DEBUG
-			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [client -> server] Receive username password authentication request");
+			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [client -> server] Recv username password authentication request");
 #endif
 			goto error;
 		}
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client -> server] Receive username password authentication request:%d bytes", rec);
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client -> server] Recv username password authentication request:%d bytes", rec);
 #endif
 		struct username_password_authentication_request_tmp *username_password_authentication_request = (struct username_password_authentication_request_tmp *)buffer;
 
@@ -1163,7 +1163,7 @@ static int worker(ngx_http_request_t *r, void *ptr)
 		
 		if(username_password_authentication_request->ver == 0x1 && !strncmp(uname, username, sizeof(username)) && !strncmp(passwd, password, sizeof(password))){
 #ifdef _DEBUG
-			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client -> server] Succeed username password authentication");
+			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client -> server] Succeeded username password authentication");
 #endif
 			username_password_authentication_response->status = 0x0;
 			
@@ -1206,18 +1206,18 @@ static int worker(ngx_http_request_t *r, void *ptr)
 	
 	// socks socks_request
 #ifdef _DEBUG
-	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client -> server] Receive socks request");
+	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client -> server] Recv socks request");
 #endif
 	bzero(buffer, BUFFER_SIZE+1);
 	rec = recv_data_bio(r, client_sock, client_bio_socks5, buffer, BUFFER_SIZE, tv_sec, tv_usec);
 	if(rec <= 0){
 #ifdef _DEBUG
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [client -> server] Receive socks request");
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [client -> server] Recv socks request");
 #endif
 		goto error;
 	}
 #ifdef _DEBUG
-	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client -> server] Receive socks request:%d bytes", rec);
+	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client -> server] Recv socks request:%d bytes", rec);
 #endif
 	
 	struct socks_request *socks_request = (struct socks_request *)buffer;
@@ -2617,7 +2617,7 @@ static ngx_int_t ngx_http_socks5_header_filter(ngx_http_request_t *r)
 		}
 #ifdef _DEBUG
 
-		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client <- server] Succeed Socks5 over TLS connection (BIO_do_handshake)");
+		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] [client <- server] Succeeded Socks5 over TLS connection (BIO_do_handshake)");
 #endif
 
 		worker_param.client_sock = client_sock;
