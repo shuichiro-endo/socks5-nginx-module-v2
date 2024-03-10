@@ -4478,6 +4478,8 @@ static int worker(void *ptr)
 	printf("[I] Worker exit\n");
 #endif
 	Sleep(5);
+	free(buffer);
+	free(http_request);
 	fini_ssl(&ssl_param);
 	if(forward_proxy_flag > 0){	// http or https forward proxy
 		close_socket(forward_proxy_sock);
@@ -4489,6 +4491,8 @@ static int worker(void *ptr)
 
 error:
 	Sleep(5);
+	free(buffer);
+	free(http_request);
 	fini_ssl(&ssl_param);
 	if(forward_proxy_flag > 0){	// http or https forward proxy
 		close_socket(forward_proxy_sock);

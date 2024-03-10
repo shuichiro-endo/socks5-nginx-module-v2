@@ -727,9 +727,14 @@ static int do_socks5_handshake_tor_client(ngx_http_request_t *r, int tor_sock, c
 	int ret = 0;
 	int length = 0;
 	char *buffer = calloc(BUFFER_SIZE+1, sizeof(unsigned char));
+	struct selection_request *selection_request = NULL;
+	struct socks_request_ipv4 *socks_request_ipv4 = NULL;
+	struct socks_request_domainname *socks_request_domainname = NULL;
+	struct socks_request_ipv6 *socks_request_ipv6 = NULL;
+
 
 	// socks selection_request
-	struct selection_request *selection_request = (struct selection_request *)calloc(sizeof(struct selection_request), sizeof(unsigned char));
+	selection_request = (struct selection_request *)calloc(sizeof(struct selection_request), sizeof(unsigned char));
 	selection_request->ver = 0x5;
 	selection_request->nmethods = 0x1;
 	selection_request->methods[0] = 0x0;	// no authentication required
@@ -740,7 +745,6 @@ static int do_socks5_handshake_tor_client(ngx_http_request_t *r, int tor_sock, c
 #ifdef _DEBUG
 		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server -> torclt] Send selection request");
 #endif
-		free(selection_request);
 		goto error;
 	}
 #ifdef _DEBUG
@@ -770,52 +774,49 @@ static int do_socks5_handshake_tor_client(ngx_http_request_t *r, int tor_sock, c
 
 	// socks socks_request
 	if(tor_dst_atyp == 0x1){	// IPv4
-		struct socks_request_ipv4 *socks_request = (struct socks_request_ipv4 *)calloc(sizeof(struct socks_request_ipv4), sizeof(unsigned char));
-		socks_request->ver = 0x5;
-		socks_request->cmd = 0x1;	// CONNECT
-		socks_request->atyp = tor_dst_atyp;
-		memcpy(&socks_request->dst_addr, tor_dst_addr, 4);
-		memcpy(&socks_request->dst_port, tor_dst_port, 2);
+		socks_request_ipv4 = (struct socks_request_ipv4 *)calloc(sizeof(struct socks_request_ipv4), sizeof(unsigned char));
+		socks_request_ipv4->ver = 0x5;
+		socks_request_ipv4->cmd = 0x1;	// CONNECT
+		socks_request_ipv4->atyp = tor_dst_atyp;
+		memcpy(&socks_request_ipv4->dst_addr, tor_dst_addr, 4);
+		memcpy(&socks_request_ipv4->dst_port, tor_dst_port, 2);
 
-		sen = send_data(r, tor_sock, socks_request, sizeof(struct socks_request_ipv4), tv_sec, tv_usec);
+		sen = send_data(r, tor_sock, socks_request_ipv4, sizeof(struct socks_request_ipv4), tv_sec, tv_usec);
 		if(sen <= 0){
 #ifdef _DEBUG
 			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server -> torclt] Send socks request");
 #endif
-			free(socks_request);
 			goto error;
 		}
 	}else if(tor_dst_atyp == 0x3){	// domain name
-		struct socks_request_domainname *socks_request = (struct socks_request_domainname *)calloc(sizeof(struct socks_request_domainname), sizeof(unsigned char));
-		socks_request->ver = 0x5;
-		socks_request->cmd = 0x1;	// CONNECT
-		socks_request->atyp = tor_dst_atyp;
-		socks_request->dst_addr_len = tor_dst_addr_len;
-		memcpy(&socks_request->dst_addr, tor_dst_addr, tor_dst_addr_len);
-		memcpy(&socks_request->dst_addr[(u_short)tor_dst_addr_len], tor_dst_port, 2);
+		socks_request_domainname = (struct socks_request_domainname *)calloc(sizeof(struct socks_request_domainname), sizeof(unsigned char));
+		socks_request_domainname->ver = 0x5;
+		socks_request_domainname->cmd = 0x1;	// CONNECT
+		socks_request_domainname->atyp = tor_dst_atyp;
+		socks_request_domainname->dst_addr_len = tor_dst_addr_len;
+		memcpy(&socks_request_domainname->dst_addr, tor_dst_addr, tor_dst_addr_len);
+		memcpy(&socks_request_domainname->dst_addr[(u_short)tor_dst_addr_len], tor_dst_port, 2);
 		length = 5 + tor_dst_addr_len + 2;
-		sen = send_data(r, tor_sock, socks_request, length, tv_sec, tv_usec);
+		sen = send_data(r, tor_sock, socks_request_domainname, length, tv_sec, tv_usec);
 		if(sen <= 0){
 #ifdef _DEBUG
 			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server -> torclt] Send socks request");
 #endif
-			free(socks_request);
 			goto error;
 		}
 	}else if(tor_dst_atyp == 0x4){	// IPv6
-		struct socks_request_ipv6 *socks_request = (struct socks_request_ipv6 *)calloc(sizeof(struct socks_request_ipv6), sizeof(unsigned char));
-		socks_request->ver = 0x5;
-		socks_request->cmd = 0x1;	// CONNECT
-		socks_request->atyp = tor_dst_atyp;
-		memcpy(&socks_request->dst_addr, tor_dst_addr, 16);
-		memcpy(&socks_request->dst_port, tor_dst_port, 2);
+		socks_request_ipv6 = (struct socks_request_ipv6 *)calloc(sizeof(struct socks_request_ipv6), sizeof(unsigned char));
+		socks_request_ipv6->ver = 0x5;
+		socks_request_ipv6->cmd = 0x1;	// CONNECT
+		socks_request_ipv6->atyp = tor_dst_atyp;
+		memcpy(&socks_request_ipv6->dst_addr, tor_dst_addr, 16);
+		memcpy(&socks_request_ipv6->dst_port, tor_dst_port, 2);
 
-		sen = send_data(r, tor_sock, socks_request, sizeof(struct socks_request_ipv6), tv_sec, tv_usec);
+		sen = send_data(r, tor_sock, socks_request_ipv6, sizeof(struct socks_request_ipv6), tv_sec, tv_usec);
 		if(sen <= 0){
 #ifdef _DEBUG
 			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [server -> torclt] Send socks request");
 #endif
-			free(socks_request);
 			goto error;
 		}
 	}else{
@@ -848,10 +849,18 @@ static int do_socks5_handshake_tor_client(ngx_http_request_t *r, int tor_sock, c
 	}
 	ret = socks_response->rep;
 
+	free(selection_request);
+	free(socks_request_ipv4);
+	free(socks_request_domainname);
+	free(socks_request_ipv6);
 	free(buffer);
 	return ret;
 
 error:
+	free(selection_request);
+	free(socks_request_ipv4);
+	free(socks_request_domainname);
+	free(socks_request_ipv6);
 	free(buffer);
 	return -1;
 }
@@ -2052,10 +2061,12 @@ static int worker(ngx_http_request_t *r, void *ptr)
 #ifdef _DEBUG
 	ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Worker exit");
 #endif
+	free(buffer);
 	close_socket(target_sock);
 	return 0;
 
 error:
+	free(buffer);
 	if(target_sock != -1){
 		close_socket(target_sock);
 	}
@@ -2245,7 +2256,7 @@ static ngx_int_t ngx_http_socks5_header_filter(ngx_http_request_t *r)
 		sen = send_data_bio(r, client_sock, client_bio_http, SOCKS5_CHECK_MESSAGE, strlen(SOCKS5_CHECK_MESSAGE), tv_sec, tv_usec);
 		if(sen <= 0){
 #ifdef _DEBUG
-				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [client <- server] Send SOCKS5_CHECK_MESSAGE error");
+			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] [client <- server] Send SOCKS5_CHECK_MESSAGE error");
 #endif
 			goto error;
 		}
