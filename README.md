@@ -396,7 +396,7 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
               [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]
               [-t (tor connection)]
               [-u (client certificate authentication(socks5 over tls))]
-              [-v decrypt serverkey aeskey base64] [-w decrypt serverkey aesiv base64]
+              [-v aeskey(base64, decrypt serverkey)] [-w aesiv(base64, decrypt serverkey)]
     example : ./client -h 0.0.0.0 -p 9050 -H 192.168.0.10 -P 443
             : ./client -h localhost -p 9050 -H foobar.test -P 443
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0

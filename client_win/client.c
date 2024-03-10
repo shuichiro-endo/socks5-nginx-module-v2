@@ -4578,7 +4578,7 @@ static void usage(char *filename)
 	printf("          [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]\n");
 	printf("          [-t (tor connection)]\n");
 	printf("          [-u (client certificate authentication(socks5 over tls))]\n");
-	printf("          [-v decrypt serverkey aeskey base64] [-w decrypt serverkey aesiv base64]\n");
+	printf("          [-v aeskey(base64, decrypt serverkey)] [-w aesiv(base64, decrypt serverkey)]\n");
 	printf("example : %s -h 127.0.0.1 -p 9050 -H 192.168.0.10 -P 443\n", filename);
 	printf("        : %s -h localhost -p 9050 -H foobar.test -P 443\n", filename);
 	printf("        : %s -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0\n", filename);

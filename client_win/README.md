@@ -62,7 +62,7 @@ usage   : client.exe -h listen_domainname -p listen_port -H target_socks5server_
           [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]
           [-t (tor connection)]
           [-u (client certificate authentication(socks5 over tls))]
-          [-v decrypt serverkey aeskey base64] [-w decrypt serverkey aesiv base64]
+          [-v aeskey(base64, decrypt serverkey)] [-w aesiv(base64, decrypt serverkey)]
 example : client.exe -h 127.0.0.1 -p 9050 -H 192.168.0.10 -P 443
         : client.exe -h localhost -p 9050 -H foobar.test -P 443
         : client.exe -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0
