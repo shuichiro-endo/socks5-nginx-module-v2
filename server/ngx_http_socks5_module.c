@@ -684,7 +684,7 @@ error:
 static int send_socks_response_ipv4_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char rep, char rsv, char atyp, long tv_sec, long tv_usec)
 {
 	int sen;
-	struct socks_response_ipv4 *socks_response_ipv4 = (struct socks_response_ipv4 *)malloc(sizeof(struct socks_response_ipv4));
+	struct socks_response_ipv4 *socks_response_ipv4 = (struct socks_response_ipv4 *)calloc(1, sizeof(struct socks_response_ipv4));
 	
 	socks_response_ipv4->ver = ver;		// protocol version
 	socks_response_ipv4->rep = rep;		// Connection refused
@@ -704,7 +704,7 @@ static int send_socks_response_ipv4_bio(ngx_http_request_t *r, int client_sock, 
 static int send_socks_response_ipv6_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char rep, char rsv, char atyp, long tv_sec, long tv_usec)
 {
 	int sen;
-	struct socks_response_ipv6 *socks_response_ipv6 = (struct socks_response_ipv6 *)malloc(sizeof(struct socks_response_ipv6));
+	struct socks_response_ipv6 *socks_response_ipv6 = (struct socks_response_ipv6 *)calloc(1, sizeof(struct socks_response_ipv6));
 	
 	socks_response_ipv6->ver = ver;		// protocol version
 	socks_response_ipv6->rep = rep;		// Connection refused
@@ -978,7 +978,7 @@ static int worker(ngx_http_request_t *r, void *ptr)
 
 
 	// socks selection_response
-	struct selection_response *selection_response = (struct selection_response *)malloc(sizeof(struct selection_response));
+	struct selection_response *selection_response = (struct selection_response *)calloc(1, sizeof(struct selection_response));
 	selection_response->ver = 0x5;		// socks version 5
 	selection_response->method = method;	// no authentication required or username/password
 	if(selection_request->ver != 0x5 || authentication_method != method){
@@ -1040,7 +1040,7 @@ static int worker(ngx_http_request_t *r, void *ptr)
 
 
 		// socks username_password_authentication_response
-		struct username_password_authentication_response *username_password_authentication_response = (struct username_password_authentication_response *)malloc(sizeof(struct username_password_authentication_response));
+		struct username_password_authentication_response *username_password_authentication_response = (struct username_password_authentication_response *)calloc(1, sizeof(struct username_password_authentication_response));
 		username_password_authentication_response->ver = 0x1;
 		
 		if(username_password_authentication_request->ver == 0x1 && !strncmp(uname, username, sizeof(username)) && !strncmp(passwd, password, sizeof(password))){
