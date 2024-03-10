@@ -178,8 +178,7 @@ static int encrypt_aes(unsigned char *plaintext, int plaintext_length, unsigned 
 #ifdef _DEBUG
 //		printf("[E] EVP_EncryptInit_ex error\n");
 #endif
-		EVP_CIPHER_CTX_free(ctx);
-		return -1;
+		goto error;
 	}
 	
 	ret = EVP_EncryptUpdate(ctx, ciphertext, &length, plaintext, plaintext_length);
@@ -187,8 +186,7 @@ static int encrypt_aes(unsigned char *plaintext, int plaintext_length, unsigned 
 #ifdef _DEBUG
 //		printf("[E] EVP_EncryptUpdate error\n");
 #endif
-		EVP_CIPHER_CTX_free(ctx);
-		return -1;
+		goto error;
 	}
 	ciphertext_length = length;
 	
@@ -197,14 +195,16 @@ static int encrypt_aes(unsigned char *plaintext, int plaintext_length, unsigned 
 #ifdef _DEBUG
 //		printf("[E] EVP_EncryptFinal_ex error\n");
 #endif
-		EVP_CIPHER_CTX_free(ctx);
-		return -1;
+		goto error;
 	}
 	ciphertext_length += length;
 	
 	EVP_CIPHER_CTX_free(ctx);
-	
 	return ciphertext_length;
+
+error:
+	EVP_CIPHER_CTX_free(ctx);
+	return -1;
 }
 
 
@@ -228,8 +228,7 @@ static int decrypt_aes(unsigned char *ciphertext, int ciphertext_length, unsigne
 #ifdef _DEBUG
 //		printf("[E] EVP_DecryptInit_ex error\n");
 #endif
-		EVP_CIPHER_CTX_free(ctx);
-		return -1;
+		goto error;
 	}
 	
 	ret = EVP_DecryptUpdate(ctx, plaintext, &length, ciphertext, ciphertext_length);
@@ -237,8 +236,7 @@ static int decrypt_aes(unsigned char *ciphertext, int ciphertext_length, unsigne
 #ifdef _DEBUG
 //		printf("[E] EVP_DecryptUpdate error\n");
 #endif
-		EVP_CIPHER_CTX_free(ctx);
-		return -1;
+		goto error;
 	}
 	plaintext_length = length;
 	
@@ -247,14 +245,16 @@ static int decrypt_aes(unsigned char *ciphertext, int ciphertext_length, unsigne
 #ifdef _DEBUG
 //		printf("[E] EVP_DecryptFinal_ex error\n");
 #endif
-		EVP_CIPHER_CTX_free(ctx);
-		return -1;
+		goto error;
 	}
 	plaintext_length += length;
 	
 	EVP_CIPHER_CTX_free(ctx);
-	
 	return plaintext_length;
+
+error:
+	EVP_CIPHER_CTX_free(ctx);
+	return -1;
 }
 
 
@@ -275,8 +275,7 @@ static int encode_base64(const unsigned char *input, int length, unsigned char *
 #ifdef _DEBUG
 //		printf("[E] BIO_write error\n");
 #endif
-		BIO_free_all(bio);
-		return -1;
+		goto error;
 	}
 
 	ret = BIO_flush(bio);
@@ -284,8 +283,7 @@ static int encode_base64(const unsigned char *input, int length, unsigned char *
 #ifdef _DEBUG
 //		printf("[E] BIO_flush error\n");
 #endif
-		BIO_free_all(bio);
-		return -1;
+		goto error;
 	}
 
 	len = BIO_get_mem_data(mem, &ptr);
@@ -293,24 +291,25 @@ static int encode_base64(const unsigned char *input, int length, unsigned char *
 #ifdef _DEBUG
 //		printf("[E] BIO_get_mem_data error\n");
 #endif
-		BIO_free_all(bio);
-		return -1;
+		goto error;
 	}
 
 	if(len > output_size){
 #ifdef _DEBUG
 //		printf("[E] output_size error\n");
 #endif
-		BIO_free_all(bio);
-		return -1;
+		goto error;
 	}
 
 	memcpy(output, ptr, (int)len);
 	output_length = strlen(output);
 
 	BIO_free_all(bio);
-
 	return output_length;
+
+error:
+	BIO_free_all(bio);
+	return -1;
 }
 
 
@@ -328,8 +327,7 @@ static int decode_base64(const unsigned char *input, int length, unsigned char *
 #ifdef _DEBUG
 //		printf("[E] output_size error\n");
 #endif
-		BIO_free_all(bio);
-		return -1;
+		goto error;
 	}
 
 	output_length = BIO_read(bio, output, length);
@@ -337,8 +335,7 @@ static int decode_base64(const unsigned char *input, int length, unsigned char *
 #ifdef _DEBUG
 //		printf("[E] BIO_read error\n");
 #endif
-		BIO_free_all(bio);
-		return -1;
+		goto error;
 	}
 
 	ret = BIO_flush(bio);
@@ -346,13 +343,15 @@ static int decode_base64(const unsigned char *input, int length, unsigned char *
 #ifdef _DEBUG
 //		printf("[E] BIO_flush error\n");
 #endif
-		BIO_free_all(bio);
-		return -1;
+		goto error;
 	}
 
 	BIO_free_all(bio);
-
 	return output_length;
+
+error:
+	BIO_free_all(bio);
+	return -1;
 }
 
 

@@ -103,7 +103,9 @@ ngx_module_t ngx_http_socks5_module = {
 
 
 //static int encrypt_aes(ngx_http_request_t *r, unsigned char *plaintext, int plaintext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *ciphertext);
-//static int decrypt_aes(ngx_http_request_t *r, unsigned char *ciphertext, int ciphertext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *plaintext);
+static int decrypt_aes(ngx_http_request_t *r, unsigned char *ciphertext, int ciphertext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *plaintext);
+//static int encode_base64(ngx_http_request_t *r, const unsigned char *input, int length, unsigned char *output, int output_size);
+static int decode_base64(ngx_http_request_t *r, const unsigned char *input, int length, unsigned char *output, int output_size);
 static void enable_blocking_socket(ngx_http_request_t *r, int sock);	// blocking
 static void disable_blocking_socket(ngx_http_request_t *r, int sock);	// non blocking
 //static void enable_blocking_bio(ngx_http_request_t *r, BIO *bio);	// blocking
@@ -142,7 +144,7 @@ static int encrypt_aes(ngx_http_request_t *r, unsigned char *plaintext, int plai
 #ifdef _DEBUG
 //		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] EVP_EncryptInit_ex error");
 #endif
-		return -1;
+		goto error;
 	}
 	
 	ret = EVP_EncryptUpdate(ctx, ciphertext, &length, plaintext, plaintext_length);
@@ -150,7 +152,7 @@ static int encrypt_aes(ngx_http_request_t *r, unsigned char *plaintext, int plai
 #ifdef _DEBUG
 //		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] EVP_EncryptUpdate error");
 #endif
-		return -1;
+		goto error;
 	}
 	ciphertext_length = length;
 	
@@ -159,16 +161,19 @@ static int encrypt_aes(ngx_http_request_t *r, unsigned char *plaintext, int plai
 #ifdef _DEBUG
 //		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] EVP_EncryptFinal_ex error");
 #endif
-		return -1;
+		goto error;
 	}
 	ciphertext_length += length;
 	
 	EVP_CIPHER_CTX_free(ctx);
-	
 	return ciphertext_length;
+
+error:
+	EVP_CIPHER_CTX_free(ctx);
+	return -1;
 }
 */
-/*
+
 static int decrypt_aes(ngx_http_request_t *r, unsigned char *ciphertext, int ciphertext_length, unsigned char *aes_key, unsigned char *aes_iv, unsigned char *plaintext)
 {
 	EVP_CIPHER_CTX *ctx;
@@ -189,7 +194,7 @@ static int decrypt_aes(ngx_http_request_t *r, unsigned char *ciphertext, int cip
 #ifdef _DEBUG
 //		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] EVP_DecryptInit_ex error");
 #endif
-		return -1;
+		goto error;
 	}
 	
 	ret = EVP_DecryptUpdate(ctx, plaintext, &length, ciphertext, ciphertext_length);
@@ -197,7 +202,7 @@ static int decrypt_aes(ngx_http_request_t *r, unsigned char *ciphertext, int cip
 #ifdef _DEBUG
 //		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] EVP_DecryptUpdate error");
 #endif
-		return -1;
+		goto error;
 	}
 	plaintext_length = length;
 	
@@ -206,15 +211,115 @@ static int decrypt_aes(ngx_http_request_t *r, unsigned char *ciphertext, int cip
 #ifdef _DEBUG
 //		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] EVP_DecryptFinal_ex error");
 #endif
-		return -1;
+		goto error;
 	}
 	plaintext_length += length;
 	
 	EVP_CIPHER_CTX_free(ctx);
-	
 	return plaintext_length;
+
+error:
+	EVP_CIPHER_CTX_free(ctx);
+	return -1;
+}
+
+/*
+static int encode_base64(ngx_http_request_t *r, const unsigned char *input, int length, unsigned char *output, int output_size)
+{
+	BIO *b64 = BIO_new(BIO_f_base64());
+	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+	BIO *mem = BIO_new(BIO_s_mem());
+	char *ptr = NULL;
+	long len = 0;
+	int output_length = 0;
+	int ret = 0;
+
+	BIO *bio = BIO_push(b64, mem);
+
+	ret = BIO_write(bio, input, length);
+	if(ret <= 0){
+#ifdef _DEBUG
+//		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] BIO_write error");
+#endif
+		goto error;
+	}
+
+	ret = BIO_flush(bio);
+	if(ret <= 0){
+#ifdef _DEBUG
+//		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] BIO_flush error");
+#endif
+		goto error;
+	}
+
+	len = BIO_get_mem_data(mem, &ptr);
+	if(len <= 0){
+#ifdef _DEBUG
+//		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] BIO_get_mem_data error");
+#endif
+		goto error;
+	}
+
+	if(len > output_size){
+#ifdef _DEBUG
+//		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] output_size error");
+#endif
+		goto error;
+	}
+
+	memcpy(output, ptr, (int)len);
+	output_length = strlen(output);
+
+	BIO_free_all(bio);
+	return output_length;
+
+error:
+	BIO_free_all(bio);
+	return -1;
 }
 */
+
+static int decode_base64(ngx_http_request_t *r, const unsigned char *input, int length, unsigned char *output, int output_size)
+{
+	BIO *b64 = BIO_new(BIO_f_base64());
+	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+	BIO *mem = BIO_new_mem_buf((char *)input, -1);
+	int output_length = 0;
+	int ret = 0;
+
+	BIO *bio = BIO_push(b64, mem);
+
+	if(length > output_size){
+#ifdef _DEBUG
+//		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] output_size error");
+#endif
+		goto error;
+	}
+
+	output_length = BIO_read(bio, output, length);
+	if(output_length <= 0){
+#ifdef _DEBUG
+//		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] BIO_read error");
+#endif
+		goto error;
+	}
+
+	ret = BIO_flush(bio);
+	if(ret <= 0){
+#ifdef _DEBUG
+//		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] BIO_flush error");
+#endif
+		goto error;
+	}
+
+	BIO_free_all(bio);
+	return output_length;
+
+error:
+	BIO_free_all(bio);
+	return -1;
+}
+
 
 static void enable_blocking_socket(ngx_http_request_t *r, int sock)	// blocking
 {
