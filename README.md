@@ -392,6 +392,7 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
               [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]
               [-t (tor connection)]
               [-u (client certificate authentication(socks5 over tls))]
+              [-v decrypt serverkey aeskey base64] [-w decrypt serverkey aesiv base64]
     example : ./client -h 0.0.0.0 -p 9050 -H 192.168.0.10 -P 443
             : ./client -h localhost -p 9050 -H foobar.test -P 443
             : ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0
@@ -675,6 +676,8 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     #define HTTP_REQUEST_HEADER_TVUSEC_KEY "usec"   // recv/send tv_usec
     #define HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY "forwardersec"      // forwarder tv_sec
     #define HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY "forwarderusec"    // forwarder tv_usec
+    #define HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY "aeskey"
+    #define HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY "aesiv"
     ```
     2. build my module (dynamic module)
     ```
@@ -694,6 +697,7 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
 - client
     1. modify client.c file
     ```
+    #define HTTP_REQUEST_HEADER_USER_AGENT_VALUE "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
     #define HTTP_REQUEST_HEADER_SOCKS5_KEY "socks5"
     #define HTTP_REQUEST_HEADER_SOCKS5_VALUE "socks5"
     #define HTTP_REQUEST_HEADER_TOR_KEY "tor"
@@ -703,21 +707,71 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     #define HTTP_REQUEST_HEADER_TVUSEC_KEY "usec"   // recv/send tv_usec
     #define HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY "forwardersec"      // forwarder tv_sec
     #define HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY "forwarderusec"    // forwarder tv_usec
-    #define HTTP_REQUEST_HEADER_USER_AGENT_VALUE "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
+    #define HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY "aeskey"
+    #define HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY "aesiv"
+    #define HTTP_REQUEST_HEADER_DUMMY_VALUE ""
     
     ...
     
     if(tor_connection_flag == 0){	// tor connection: off
         if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
-            http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_OFF, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+            http_request_length = snprintf(http_request,
+                                           BUFFER_SIZE+1,
+                                           "GET / HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %s\r\n%s: %s\r\nConnection: close\r\n\r\n",
+                                           target_domainname, target_port_number,
+                                           HTTP_REQUEST_HEADER_USER_AGENT_VALUE,
+                                           HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE,
+                                           HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_OFF,
+                                           HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec,
+                                           HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec,
+                                           HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec,
+                                           HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec,
+                                           HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY, decrypt_serverkey_aeskey_b64,
+                                           HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY, decrypt_serverkey_aesiv_b64);
         }else{	// ipv6 address
-            http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_OFF, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+            http_request_length = snprintf(http_request,
+                                           BUFFER_SIZE+1,
+                                           "GET / HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %s\r\n%s: %s\r\nConnection: close\r\n\r\n",
+                                           target_domainname, target_port_number,
+                                           HTTP_REQUEST_HEADER_USER_AGENT_VALUE,
+                                           HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE,
+                                           HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_OFF,
+                                           HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec,
+                                           HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec,
+                                           HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec,
+                                           HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec,
+                                           HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY, decrypt_serverkey_aeskey_b64,
+                                           HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY, decrypt_serverkey_aesiv_b64);
         }
     }else{	// tor connection: on
         if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
-            http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_ON, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+            http_request_length = snprintf(http_request,
+                                           BUFFER_SIZE+1,
+                                           "GET / HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %s\r\n%s: %s\r\nConnection: close\r\n\r\n",
+                                           target_domainname, target_port_number,
+                                           HTTP_REQUEST_HEADER_USER_AGENT_VALUE,
+                                           HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE,
+                                           HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_ON,
+                                           HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec,
+                                           HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec,
+                                           HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec,
+                                           HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec,
+                                           HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY, decrypt_serverkey_aeskey_b64,
+                                           HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY, decrypt_serverkey_aesiv_b64);
         }else{	// ipv6 address
-            http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_ON, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+            http_request_length = snprintf(http_request,
+                                           BUFFER_SIZE+1,
+                                           "GET / HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %s\r\n%s: %s\r\nConnection: close\r\n\r\n",
+                                           target_domainname, target_port_number,
+                                           HTTP_REQUEST_HEADER_USER_AGENT_VALUE,
+                                           HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE,
+                                           HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_ON,
+                                           HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec,
+                                           HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec,
+                                           HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec,
+                                           HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec,
+                                           HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY, decrypt_serverkey_aeskey_b64,
+                                           HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY, decrypt_serverkey_aesiv_b64);
         }
     }
     ```
@@ -844,6 +898,116 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     ```
     cd socks5-nginx-module-v2/client
     make
+    ```
+
+### How to encrypt socks5 server privatekey and certificate (for Socks5 over TLS)
+- server
+    1. generate encrypt key (aes-256-cbc(aeskey, aesiv))
+    ```
+    > cd socks5-nginx-module-v2/tools
+    > pip install pycryptodome
+    > python3 generate_aes_key.py
+    key: WJS+rQbsKcj25pZtWutFbbkbbGGxOxgP533MpaFB2SU=
+    iv : y4dwVIamgOkXojBYPDz3Tg==
+    ```
+    2. encrypt serverkey (server_socks5_private.key, server_socks5.crt) and copy encrypted privatekey and certificate
+    ```
+    > cd socks5-nginx-module-v2/tools
+    > cat server_socks5_private.key | python3 aes_cbc.py WJS+rQbsKcj25pZtWutFbbkbbGGxOxgP533MpaFB2SU= y4dwVIamgOkXojBYPDz3Tg==
+    key: WJS+rQbsKcj25pZtWutFbbkbbGGxOxgP533MpaFB2SU=
+    iv : y4dwVIamgOkXojBYPDz3Tg==
+    
+    enc: 
+    PqWHENzaYIeMfCAafKcOLxxXNAFXyzfzD/tcTnmrGXtpkj8M2Y4qpLdLo83NSMhNAO+FvAZSM/VnNhNGO15u1/TBPn8CT+QiUnbn4vN2284jHPMgZ+8ya+pM57Avf7u8rkLShTuAlQQzbcouazIaqu5Bw5wH6YvCKayrWsw5EUd/vb8EfTpybJD8IVpArpL42CyVyQ2hUdj/3vHceDhkzeAsHseLFmxh3k2xMpBAktA9rgnJcf/VBeRjRY3iX/Bm0INNyoBE6IGxSw/F+ayKnRUy/dN0wdUNHY1RLwBWDsYZqdS72LyC5EIVFTuBMOaTi80ICGeM/n10u9PXOhTxBg==
+    
+    dec: 
+    -----BEGIN PRIVATE KEY-----
+    MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgpEIBK1hhvc+HVJRk
+    QfpifIMOPxLIRJovTxjhFlnHJLihRANCAAQndxVggZiwxAQoi8ZysOmtC4U3Ufrx
+    skaIMBrDIi3Myanw8NtNaVaW/CzdzeG+U5sWx5IFA4iHyhOSp2hxi1Uo
+    -----END PRIVATE KEY-----
+    
+    > cat server_socks5.crt | python3 aes_cbc.py WJS+rQbsKcj25pZtWutFbbkbbGGxOxgP533MpaFB2SU= y4dwVIamgOkXojBYPDz3Tg==
+    key: WJS+rQbsKcj25pZtWutFbbkbbGGxOxgP533MpaFB2SU=
+    iv : y4dwVIamgOkXojBYPDz3Tg==
+    
+    enc: 
+    9e4qtUjmq8FnTV0kitaM1HSXv+ECm6w9Ezq1saMkj1T6nJVu6jIGudIeGIwGNmBXhVb6stJBt2ooQJrqNbqhtaff1eLY2daGYNqA/GQMe/4jV+c7ZHH9h5iLCfoAU58msLiu7w3J9Kl+D686Q97mfdYhUXfoRkPN85CsZfYIAP21JYy5lLN09ADAgOUTJ2o+mVJkxnQI6zN1reqF68ArubK9dVxkeQOlNxaY+0MwBp62btxX48ScmoDFB1e1M4C3laPW3ZCBhV/Hndeh3sQG/VXUnKO+R/UeIfo7nK3308WDr/byzsJ2h/DuJ4c81HSCkDCYmy52gbZClCZA8xw6B9XRJPmXe2qpjoGmJ13nQmvxcJOvF6XAeFzmSS9Vuadd2FiNbVsy2n2KnStPzkcH96grr5LQR6LuNd4ofroqmukL9EadI7kXp7+DVjXujiG1iR+PNMxUv3ngIuhX7j52bVgXGH5ekPhRqFjJ4MWmhIDLFFgKAn71nsnHfLq/6YSGNeBqDy/vyhIo/RmtxaVAegtxZoZ+Zr++7ZM4sBLrA9VbJ3KVfEdyvCGFL7ZJDxgcIOoexkf3BW4iQSgIE5WlJADh7bsXgIOlJ9N+GDSFG86OjZuiaDjrzbe9eQZlyDODAcEanDLnP68+3WOE7M+zuOFrt53uCb2M7f+YkcCxOYH4TaAo7d4gSJPCYQNyQz/rzqXO3gXD2l9e+Tx4koXZgss4JABdSAADrkHev2U11Oxayoi5yU7MhgclXTQnj1RdLf2kMRNG227hC0Y07dlbSg==
+    
+    dec: 
+    -----BEGIN CERTIFICATE-----
+    MIIBfjCCASOgAwIBAgIUWg2F5a7tuHBZcOuOQmQp7A9YEw8wCgYIKoZIzj0EAwIw
+    FDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTIzMTEwODA3NTI0OFoXDTMzMTEwNTA3
+    NTI0OFowFDESMBAGA1UEAwwJbG9jYWxob3N0MFkwEwYHKoZIzj0CAQYIKoZIzj0D
+    AQcDQgAEJ3cVYIGYsMQEKIvGcrDprQuFN1H68bJGiDAawyItzMmp8PDbTWlWlvws
+    3c3hvlObFseSBQOIh8oTkqdocYtVKKNTMFEwHQYDVR0OBBYEFBRxce8YQWc4Z1Dc
+    vBgZndjGdTceMB8GA1UdIwQYMBaAFBRxce8YQWc4Z1DcvBgZndjGdTceMA8GA1Ud
+    EwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSQAwRgIhALIk//w4qN3Q4iVCyNgTeP1Z
+    SpiWrOcI+QYFQfgBSbAmAiEA34doDamtu1nhZXz6gka0ImX9I11HZiELVHlT3/BT
+    0pY=
+    -----END CERTIFICATE-----
+    ```
+    3. paste the encrypted privatekey and certificate into serverkey.h file and comment out old variables
+    ```
+    /*
+    char server_privatekey_socks5[] = "-----BEGIN PRIVATE KEY-----\n"\
+    "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgpEIBK1hhvc+HVJRk\n"\
+    "QfpifIMOPxLIRJovTxjhFlnHJLihRANCAAQndxVggZiwxAQoi8ZysOmtC4U3Ufrx\n"\
+    "skaIMBrDIi3Myanw8NtNaVaW/CzdzeG+U5sWx5IFA4iHyhOSp2hxi1Uo\n"\
+    "-----END PRIVATE KEY-----\n";
+    
+    char server_certificate_socks5[] = "-----BEGIN CERTIFICATE-----\n"\
+    "MIIBfjCCASOgAwIBAgIUWg2F5a7tuHBZcOuOQmQp7A9YEw8wCgYIKoZIzj0EAwIw\n"\
+    "FDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTIzMTEwODA3NTI0OFoXDTMzMTEwNTA3\n"\
+    "NTI0OFowFDESMBAGA1UEAwwJbG9jYWxob3N0MFkwEwYHKoZIzj0CAQYIKoZIzj0D\n"\
+    "AQcDQgAEJ3cVYIGYsMQEKIvGcrDprQuFN1H68bJGiDAawyItzMmp8PDbTWlWlvws\n"\
+    "3c3hvlObFseSBQOIh8oTkqdocYtVKKNTMFEwHQYDVR0OBBYEFBRxce8YQWc4Z1Dc\n"\
+    "vBgZndjGdTceMB8GA1UdIwQYMBaAFBRxce8YQWc4Z1DcvBgZndjGdTceMA8GA1Ud\n"\
+    "EwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSQAwRgIhALIk//w4qN3Q4iVCyNgTeP1Z\n"\
+    "SpiWrOcI+QYFQfgBSbAmAiEA34doDamtu1nhZXz6gka0ImX9I11HZiELVHlT3/BT\n"\
+    "0pY=\n"\
+    "-----END CERTIFICATE-----\n";
+    */
+    
+    
+    /*
+    encrypt serverkey (aes-256-cbc, base64)
+    key : WJS+rQbsKcj25pZtWutFbbkbbGGxOxgP533MpaFB2SU=
+    iv  : y4dwVIamgOkXojBYPDz3Tg==
+    */
+    
+    char server_privatekey_socks5[] = "PqWHENzaYIeMfCAafKcOLxxXNAFXyzfzD/tcTnmrGXtpkj8M2Y4qpLdLo83NSMhNAO+FvAZSM/VnNhNGO15u1/TBPn8CT+QiUnbn4vN2284jHPMgZ+8ya+pM57Avf7u8rkLShTuAlQQzbcouazIaqu5Bw5wH6YvCKayrWsw5EUd/vb8EfTpybJD8IVpArpL42CyVyQ2hUdj/3vHceDhkzeAsHseLFmxh3k2xMpBAktA9rgnJcf/VBeRjRY3iX/Bm0INNyoBE6IGxSw/F+ayKnRUy/dN0wdUNHY1RLwBWDsYZqdS72LyC5EIVFTuBMOaTi80ICGeM/n10u9PXOhTxBg==";
+    
+    char server_certificate_socks5[] = "9e4qtUjmq8FnTV0kitaM1HSXv+ECm6w9Ezq1saMkj1T6nJVu6jIGudIeGIwGNmBXhVb6stJBt2ooQJrqNbqhtaff1eLY2daGYNqA/GQMe/4jV+c7ZHH9h5iLCfoAU58msLiu7w3J9Kl+D686Q97mfdYhUXfoRkPN85CsZfYIAP21JYy5lLN09ADAgOUTJ2o+mVJkxnQI6zN1reqF68ArubK9dVxkeQOlNxaY+0MwBp62btxX48ScmoDFB1e1M4C3laPW3ZCBhV/Hndeh3sQG/VXUnKO+R/UeIfo7nK3308WDr/byzsJ2h/DuJ4c81HSCkDCYmy52gbZClCZA8xw6B9XRJPmXe2qpjoGmJ13nQmvxcJOvF6XAeFzmSS9Vuadd2FiNbVsy2n2KnStPzkcH96grr5LQR6LuNd4ofroqmukL9EadI7kXp7+DVjXujiG1iR+PNMxUv3ngIuhX7j52bVgXGH5ekPhRqFjJ4MWmhIDLFFgKAn71nsnHfLq/6YSGNeBqDy/vyhIo/RmtxaVAegtxZoZ+Zr++7ZM4sBLrA9VbJ3KVfEdyvCGFL7ZJDxgcIOoexkf3BW4iQSgIE5WlJADh7bsXgIOlJ9N+GDSFG86OjZuiaDjrzbe9eQZlyDODAcEanDLnP68+3WOE7M+zuOFrt53uCb2M7f+YkcCxOYH4TaAo7d4gSJPCYQNyQz/rzqXO3gXD2l9e+Tx4koXZgss4JABdSAADrkHev2U11Oxayoi5yU7MhgclXTQnj1RdLf2kMRNG227hC0Y07dlbSg==";
+    
+    ```
+    4. modify ngx_http_socks5_module.c file
+    ```
+    ...
+    
+    static int decrypt_serverkey_flag = 1;	// 0:off 1:on
+
+    ...
+    ```
+    5. build my module (dynamic module)
+    ```
+    cd socks5-nginx-module-v2/nginx-x.xx.x
+    ./configure --with-compat --add-dynamic-module=../server --with-ld-opt="-lssl -lcrypto"
+    make modules
+    ```
+    6. copy the module library (.so file) to the nginx modules directory
+    ```
+    sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    ```
+    7. restart nginx server
+    ```
+    sudo systemctl restart nginx
+    ```
+- example
+    - client
+    ```
+    cd socks5-nginx-module-v2/client
+    ./client -h 0.0.0.0 -p 9050 -H foobar.test -P 443 -A 10 -C 10 -v WJS+rQbsKcj25pZtWutFbbkbbGGxOxgP533MpaFB2SU= -w y4dwVIamgOkXojBYPDz3Tg==
     ```
 
 ### How to change socks5 server cipher suite TLS1.2, TLS1.3 (for Socks5 over TLS)

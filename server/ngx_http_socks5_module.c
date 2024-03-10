@@ -48,6 +48,8 @@
 #define HTTP_REQUEST_HEADER_TVUSEC_KEY "usec"	// recv/send tv_usec
 #define HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY "forwardersec"		// forwarder tv_sec
 #define HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY "forwarderusec"	// forwarder tv_usec
+#define HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY "aeskey"
+#define HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY "aesiv"
 
 #define SOCKS5_CHECK_MESSAGE "socks5 ok"
 
@@ -64,6 +66,8 @@ static char client_certificate_filename_socks5[256] = "/etc/nginx/certs/client_s
 static char tor_client_ip[256] = "127.0.0.1";
 static char tor_client_ip_atyp = 0x1;		// ipv4:0x1 domainname:0x3 ipv6:0x4
 static uint16_t tor_client_port = 9050;
+
+static int decrypt_serverkey_flag = 0;	// 0:off 1:on
 
 
 static ngx_table_elt_t *search_headers_in(ngx_http_request_t *r, u_char *name, size_t len);
@@ -2274,6 +2278,19 @@ static ngx_int_t ngx_http_socks5_header_filter(ngx_http_request_t *r)
 	EVP_PKEY *s_privatekey_socks5 = NULL;
 	X509 *s_cert_socks5 = NULL;
 
+	int length = 0;
+	unsigned char decrypt_serverkey_aeskey_b64[45];
+	unsigned char decrypt_serverkey_aesiv_b64[25];
+	unsigned char decrypt_serverkey_aeskey[45];
+	unsigned char decrypt_serverkey_aesiv[25];
+	bzero(&decrypt_serverkey_aeskey_b64, 45);
+	bzero(&decrypt_serverkey_aesiv_b64, 25);
+	bzero(&decrypt_serverkey_aeskey, 45);
+	bzero(&decrypt_serverkey_aesiv, 25);
+
+	unsigned char *tmp = NULL;
+	unsigned char *server_privatekey_socks5_decrypt = NULL;
+	unsigned char *server_certificate_socks5_decrypt = NULL;
 
 	if(r->connection->ssl != NULL){	// HTTPS
 		sc = r->connection->ssl;
@@ -2318,7 +2335,54 @@ static ngx_int_t ngx_http_socks5_header_filter(ngx_http_request_t *r)
 	if(h != NULL){
 		forwarder_tv_usec = atol((char *)h->value.data);
 	}
-	
+
+	if(decrypt_serverkey_flag == 1){
+		h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY)));
+		if(h != NULL){	// decrypt serverkey aeskey base64
+			if(strlen((const char *)h->value.data) == 44){
+				memcpy(&decrypt_serverkey_aeskey_b64, (unsigned char *)h->value.data, 44);
+				length = decode_base64(r, (const unsigned char *)decrypt_serverkey_aeskey_b64, 44, (unsigned char *)decrypt_serverkey_aeskey, 44);
+				if(length != 32){
+#ifdef _DEBUG
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] decrypt_serverkey_aeskey_b64 decode_base64 error:%d", length);
+#endif
+					return ngx_http_next_header_filter(r);
+				}
+#ifdef _DEBUG
+				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] decrypt_serverkey_aeskey_b64:%s", decrypt_serverkey_aeskey_b64);
+#endif
+			}else{
+#ifdef _DEBUG
+				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] decrypt_serverkey_aeskey_b64 error");
+#endif
+				return ngx_http_next_header_filter(r);
+			}
+		}
+
+		h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY)));
+		if(h != NULL){	// decrypt serverkey aesiv base64
+			if(strlen((const char *)h->value.data) == 24){
+				memcpy(&decrypt_serverkey_aesiv_b64, (unsigned char *)h->value.data, 24);
+				length = decode_base64(r, (const unsigned char *)decrypt_serverkey_aesiv_b64, 24, (unsigned char *)decrypt_serverkey_aesiv, 24);
+				if(length != 16){
+#ifdef _DEBUG
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] decrypt_serverkey_aesiv_b64 decode_base64 error:%d", length);
+#endif
+					return ngx_http_next_header_filter(r);
+				}
+#ifdef _DEBUG
+				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] decrypt_serverkey_aesiv_b64:%s", decrypt_serverkey_aesiv_b64);
+#endif
+			}
+		}else{
+#ifdef _DEBUG
+				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] decrypt_serverkey_aesiv_b64 error");
+#endif
+				return ngx_http_next_header_filter(r);
+		}
+	}
+
+
 	if(socks5_flag == 1){	// socks5
 #ifdef _DEBUG
 		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Socks5 start");
@@ -2384,14 +2448,80 @@ static ngx_int_t ngx_http_socks5_header_filter(ngx_http_request_t *r)
 		ssl_param.client_ctx_socks5 = client_ctx_socks5;
 
 		// server private key (Socks5 over TLS)
-		bio = BIO_new(BIO_s_mem());
-		BIO_write(bio, server_privatekey_socks5, strlen(server_privatekey_socks5));
+		if(decrypt_serverkey_flag == 1){	// decrypt serverkey
+			if(strlen(server_privatekey_socks5) <= BUFFER_SIZE){
+				tmp = calloc(BUFFER_SIZE+1, sizeof(unsigned char));
+				length = decode_base64(r, (const unsigned char *)server_privatekey_socks5, strlen(server_privatekey_socks5), (unsigned char *)tmp, BUFFER_SIZE);
+				if(length < 0){
+#ifdef _DEBUG
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] server_privatekey_socks5 decode_base64 error:%d", length);
+#endif
+					goto error;
+				}
+
+				server_privatekey_socks5_decrypt = calloc(BUFFER_SIZE+1, sizeof(unsigned char));
+				ret = decrypt_aes(r, tmp, length, (unsigned char *)decrypt_serverkey_aeskey, (unsigned char *)decrypt_serverkey_aesiv, server_privatekey_socks5_decrypt);
+				if(ret < 0){
+#ifdef _DEBUG
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] server_privatekey_socks5 decrypt_aes error:%d", ret);
+#endif
+					goto error;
+				}
+
+				bio = BIO_new(BIO_s_mem());
+				BIO_write(bio, server_privatekey_socks5_decrypt, ret);
+#ifdef _DEBUG
+				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] decrypt serverkey (server_privatekey_socks5):\n%s", server_privatekey_socks5_decrypt);
+#endif
+			}else{
+#ifdef _DEBUG
+				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] decrypt serverkey (server_privatekey_socks5) error");
+#endif
+				goto error;
+			}
+		}else{
+			bio = BIO_new(BIO_s_mem());
+			BIO_write(bio, server_privatekey_socks5, strlen(server_privatekey_socks5));
+		}
 		PEM_read_bio_PrivateKey(bio, &s_privatekey_socks5, NULL, NULL);
 		BIO_free(bio);
 
 		// server X509 certificate (Socks5 over TLS)
-		bio = BIO_new(BIO_s_mem());
-		BIO_write(bio, server_certificate_socks5, strlen(server_certificate_socks5));
+		if(decrypt_serverkey_flag == 1){	// decrypt serverkey
+			if(strlen(server_certificate_socks5) <= BUFFER_SIZE){
+				bzero(tmp, BUFFER_SIZE+1);
+				length = decode_base64(r, (const unsigned char *)server_certificate_socks5, strlen(server_certificate_socks5), (unsigned char *)tmp, BUFFER_SIZE);
+				if(length < 0){
+#ifdef _DEBUG
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] server_certificate_socks5 decode_base64 error:%d", length);
+#endif
+					goto error;
+				}
+
+				server_certificate_socks5_decrypt = calloc(BUFFER_SIZE+1, sizeof(unsigned char));
+				ret = decrypt_aes(r, tmp, length, (unsigned char *)decrypt_serverkey_aeskey, (unsigned char *)decrypt_serverkey_aesiv, server_certificate_socks5_decrypt);
+				if(ret < 0){
+#ifdef _DEBUG
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] server_certificate_socks5 decrypt_aes error:%d", ret);
+#endif
+					goto error;
+				}
+
+				bio = BIO_new(BIO_s_mem());
+				BIO_write(bio, server_certificate_socks5_decrypt, ret);
+#ifdef _DEBUG
+				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] decrypt serverkey (server_certificate_socks5):\n%s", server_certificate_socks5_decrypt);
+#endif
+			}else{
+#ifdef _DEBUG
+				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] decrypt serverkey (server_certificate_socks5) error");
+#endif
+				goto error;
+			}
+		}else{
+			bio = BIO_new(BIO_s_mem());
+			BIO_write(bio, server_certificate_socks5, strlen(server_certificate_socks5));
+		}
 		PEM_read_bio_X509(bio, &s_cert_socks5, NULL, NULL);
 		BIO_free(bio);
 
@@ -2500,12 +2630,18 @@ static ngx_int_t ngx_http_socks5_header_filter(ngx_http_request_t *r)
 		
 		ret = worker(r, &worker_param);
 		
+		free(tmp);
+		free(server_privatekey_socks5_decrypt);
+		free(server_certificate_socks5_decrypt);
 		fini_ssl(r, &ssl_param);
 	}
 
 	return ngx_http_next_header_filter(r);
 
 error:
+	free(tmp);
+	free(server_privatekey_socks5_decrypt);
+	free(server_certificate_socks5_decrypt);
 	fini_ssl(r, &ssl_param);
 	return ngx_http_next_header_filter(r);
 }

@@ -62,6 +62,7 @@
 
 #define SEC_SUCCESS(Status) ((Status) >= 0)
 
+#define HTTP_REQUEST_HEADER_USER_AGENT_VALUE "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
 #define HTTP_REQUEST_HEADER_SOCKS5_KEY "socks5"
 #define HTTP_REQUEST_HEADER_SOCKS5_VALUE "socks5"
 #define HTTP_REQUEST_HEADER_TOR_KEY "tor"
@@ -71,7 +72,9 @@
 #define HTTP_REQUEST_HEADER_TVUSEC_KEY "usec"	// recv/send tv_usec
 #define HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY "forwardersec"		// forwarder tv_sec
 #define HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY "forwarderusec"	// forwarder tv_usec
-#define HTTP_REQUEST_HEADER_USER_AGENT_VALUE "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
+#define HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY "aeskey"
+#define HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY "aesiv"
+#define HTTP_REQUEST_HEADER_DUMMY_VALUE ""
 
 #define SOCKS5_CHECK_MESSAGE "socks5 ok"
 
@@ -90,10 +93,13 @@ static char *forward_proxy_user_domainname = NULL;
 static char *forward_proxy_workstationname = NULL;
 static char *forward_proxy_spn = NULL;	// service principal name
 static char *forward_proxy_nthash_hexstring = NULL;	// nthash hexstring
+static char *decrypt_serverkey_aeskey_b64 = NULL;
+static char *decrypt_serverkey_aesiv_b64 = NULL;
 static int tor_connection_flag = 0;	// 0:off 1:on
 static int forward_proxy_flag = 0;		// 0:no 1:http 2:https
 static int forward_proxy_authentication_flag = 0;	// 0:no 1:basic 2:digest 3:ntlmv2 4:spnego(kerberos)
 static int socks5_over_tls_client_certificate_authentication_flag = 0;	// 0:off 1:on
+static int decrypt_serverkey_flag = 0;	// 0:off 1:on
 
 static char forward_proxy_certificate_filename_https[256] = ".\\forward_proxy_https.crt";	// forward proxy certificate filename (HTTPS)
 static char server_certificate_filename_https[256] = ".\\server_https.crt";	// server certificate filename (HTTPS)
@@ -3873,15 +3879,63 @@ static int worker(void *ptr)
 
 	if(tor_connection_flag == 0){	// tor connection: off
 		if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
-			http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_OFF, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+			http_request_length = snprintf(http_request,
+			                               BUFFER_SIZE+1,
+			                               "GET / HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %s\r\n%s: %s\r\nConnection: close\r\n\r\n",
+			                               target_domainname, target_port_number,
+			                               HTTP_REQUEST_HEADER_USER_AGENT_VALUE,
+			                               HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE,
+			                               HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_OFF,
+			                               HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec,
+			                               HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec,
+			                               HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec,
+			                               HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec,
+			                               HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY, decrypt_serverkey_aeskey_b64,
+			                               HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY, decrypt_serverkey_aesiv_b64);
 		}else{	// ipv6 address
-			http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_OFF, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+			http_request_length = snprintf(http_request,
+			                               BUFFER_SIZE+1,
+			                               "GET / HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %s\r\n%s: %s\r\nConnection: close\r\n\r\n",
+			                               target_domainname, target_port_number,
+			                               HTTP_REQUEST_HEADER_USER_AGENT_VALUE,
+			                               HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE,
+			                               HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_OFF,
+			                               HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec,
+			                               HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec,
+			                               HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec,
+			                               HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec,
+			                               HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY, decrypt_serverkey_aeskey_b64,
+			                               HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY, decrypt_serverkey_aesiv_b64);
 		}
 	}else{	// tor connection: on
 		if(strstr(target_domainname, ":") == NULL){	// no ipv6 address
-			http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_ON, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+			http_request_length = snprintf(http_request,
+			                               BUFFER_SIZE+1,
+			                               "GET / HTTP/1.1\r\nHost: %s:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %s\r\n%s: %s\r\nConnection: close\r\n\r\n",
+			                               target_domainname, target_port_number,
+			                               HTTP_REQUEST_HEADER_USER_AGENT_VALUE,
+			                               HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE,
+			                               HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_ON,
+			                               HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec,
+			                               HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec,
+			                               HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec,
+			                               HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec,
+			                               HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY, decrypt_serverkey_aeskey_b64,
+			                               HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY, decrypt_serverkey_aesiv_b64);
 		}else{	// ipv6 address
-			http_request_length = snprintf(http_request, BUFFER_SIZE+1, "GET / HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\nConnection: close\r\n\r\n", target_domainname, target_port_number, HTTP_REQUEST_HEADER_USER_AGENT_VALUE, HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE, HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_ON, HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec, HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec, HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec, HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec);
+			http_request_length = snprintf(http_request,
+			                               BUFFER_SIZE+1,
+			                               "GET / HTTP/1.1\r\nHost: [%s]:%s\r\nUser-Agent: %s\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.5\r\nAccept-Encoding: gzip, deflate\r\n%s: %s\r\n%s: %s\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %ld\r\n%s: %s\r\n%s: %s\r\nConnection: close\r\n\r\n",
+			                               target_domainname, target_port_number,
+			                               HTTP_REQUEST_HEADER_USER_AGENT_VALUE,
+			                               HTTP_REQUEST_HEADER_SOCKS5_KEY, HTTP_REQUEST_HEADER_SOCKS5_VALUE,
+			                               HTTP_REQUEST_HEADER_TOR_KEY, HTTP_REQUEST_HEADER_TOR_VALUE_ON,
+			                               HTTP_REQUEST_HEADER_TVSEC_KEY, tv_sec,
+			                               HTTP_REQUEST_HEADER_TVUSEC_KEY, tv_usec,
+			                               HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, forwarder_tv_sec,
+			                               HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, forwarder_tv_usec,
+			                               HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY, decrypt_serverkey_aeskey_b64,
+			                               HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY, decrypt_serverkey_aesiv_b64);
 		}
 	}
 
@@ -4524,6 +4578,7 @@ static void usage(char *filename)
 	printf("          [-i forward proxy workstationname] [-j forward proxy service principal name] [-k forward proxy nthash hexstring]\n");
 	printf("          [-t (tor connection)]\n");
 	printf("          [-u (client certificate authentication(socks5 over tls))]\n");
+	printf("          [-v decrypt serverkey aeskey base64] [-w decrypt serverkey aesiv base64]\n");
 	printf("example : %s -h 127.0.0.1 -p 9050 -H 192.168.0.10 -P 443\n", filename);
 	printf("        : %s -h localhost -p 9050 -H foobar.test -P 443\n", filename);
 	printf("        : %s -h 127.0.0.1 -p 9050 -H foobar.test -P 443 -A 3 -B 0 -C 3 -D 0\n", filename);
@@ -4582,7 +4637,7 @@ static int getopt(int argc, char **argv, char *optstring)
 int main(int argc, char **argv)
 {
 	int opt;
-	char optstring[] = "h:p:H:P:A:B:C:D:a:b:c:d:e:f:g:i:j:k:tu";
+	char optstring[] = "h:p:H:P:A:B:C:D:a:b:c:d:e:f:g:i:j:k:tuv:w:";
 	long tv_sec = 3;	// recv send
 	long tv_usec = 0;	// recv send
 	long forwarder_tv_sec = 3;
@@ -4670,6 +4725,14 @@ int main(int argc, char **argv)
 			socks5_over_tls_client_certificate_authentication_flag = 1;
 			break;
 
+		case 'v':
+			decrypt_serverkey_aeskey_b64 = optarg;
+			break;
+
+		case 'w':
+			decrypt_serverkey_aesiv_b64 = optarg;
+			break;
+
 		default:
 			usage(argv[0]);
 			exit(1);
@@ -4727,7 +4790,6 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-
 	if(forward_proxy_authentication_flag >= 1 && forward_proxy_authentication_flag <= 3){
 		if(strlen(forward_proxy_username) > USERNAME_MAX_SIZE){
 #ifdef _DEBUG
@@ -4760,6 +4822,28 @@ int main(int argc, char **argv)
 #endif
 			return -1;
 		}
+	}
+
+	if((decrypt_serverkey_aeskey_b64 == NULL && decrypt_serverkey_aesiv_b64 != NULL) || (decrypt_serverkey_aeskey_b64 != NULL && decrypt_serverkey_aesiv_b64 == NULL)){
+		usage(argv[0]);
+		exit(1);
+	}else if(decrypt_serverkey_aeskey_b64 != NULL && decrypt_serverkey_aesiv_b64 != NULL){
+		if(strlen(decrypt_serverkey_aeskey_b64) != 44){
+#ifdef _DEBUG
+			printf("[E] decrypt serverkey aeskey base64 length is not 44\n");
+#endif
+			return -1;
+		}else if(strlen(decrypt_serverkey_aesiv_b64) != 24){
+#ifdef _DEBUG
+			printf("[E] decrypt serverkey aesiv base64 length is not 24\n");
+#endif
+			return -1;
+		}
+		decrypt_serverkey_flag = 1;
+	}else{
+		decrypt_serverkey_flag = 0;
+		decrypt_serverkey_aeskey_b64 = HTTP_REQUEST_HEADER_DUMMY_VALUE;
+		decrypt_serverkey_aesiv_b64 = HTTP_REQUEST_HEADER_DUMMY_VALUE;
 	}
 
 
@@ -4850,6 +4934,16 @@ int main(int argc, char **argv)
 #endif
 	}else{
 		printf("[I] Client certificate authentication(socks5 over tls):on\n");
+	}
+
+	if(decrypt_serverkey_flag == 0){
+#ifdef _DEBUG
+		printf("[I] Decrypt serverkey:off\n");
+#endif
+	}else{
+		printf("[I] Decrypt serverkey:on\n");
+		printf("[I] Decrypt serverkey aeskey(base64):%s\n", decrypt_serverkey_aeskey_b64);
+		printf("[I] Decrypt serverkey aesiv (base64):%s\n", decrypt_serverkey_aesiv_b64);
 	}
 
 #ifdef _DEBUG

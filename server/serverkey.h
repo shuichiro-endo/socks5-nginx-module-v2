@@ -29,3 +29,17 @@ char server_certificate_socks5[] = "-----BEGIN CERTIFICATE-----\n"\
 "0pY=\n"\
 "-----END CERTIFICATE-----\n";
 
+
+
+/*
+encrypt serverkey (aes-256-cbc, base64)
+key : WJS+rQbsKcj25pZtWutFbbkbbGGxOxgP533MpaFB2SU=
+iv  : y4dwVIamgOkXojBYPDz3Tg==
+*/
+
+/*
+char server_privatekey_socks5[] = "PqWHENzaYIeMfCAafKcOLxxXNAFXyzfzD/tcTnmrGXtpkj8M2Y4qpLdLo83NSMhNAO+FvAZSM/VnNhNGO15u1/TBPn8CT+QiUnbn4vN2284jHPMgZ+8ya+pM57Avf7u8rkLShTuAlQQzbcouazIaqu5Bw5wH6YvCKayrWsw5EUd/vb8EfTpybJD8IVpArpL42CyVyQ2hUdj/3vHceDhkzeAsHseLFmxh3k2xMpBAktA9rgnJcf/VBeRjRY3iX/Bm0INNyoBE6IGxSw/F+ayKnRUy/dN0wdUNHY1RLwBWDsYZqdS72LyC5EIVFTuBMOaTi80ICGeM/n10u9PXOhTxBg==";
+
+char server_certificate_socks5[] = "9e4qtUjmq8FnTV0kitaM1HSXv+ECm6w9Ezq1saMkj1T6nJVu6jIGudIeGIwGNmBXhVb6stJBt2ooQJrqNbqhtaff1eLY2daGYNqA/GQMe/4jV+c7ZHH9h5iLCfoAU58msLiu7w3J9Kl+D686Q97mfdYhUXfoRkPN85CsZfYIAP21JYy5lLN09ADAgOUTJ2o+mVJkxnQI6zN1reqF68ArubK9dVxkeQOlNxaY+0MwBp62btxX48ScmoDFB1e1M4C3laPW3ZCBhV/Hndeh3sQG/VXUnKO+R/UeIfo7nK3308WDr/byzsJ2h/DuJ4c81HSCkDCYmy52gbZClCZA8xw6B9XRJPmXe2qpjoGmJ13nQmvxcJOvF6XAeFzmSS9Vuadd2FiNbVsy2n2KnStPzkcH96grr5LQR6LuNd4ofroqmukL9EadI7kXp7+DVjXujiG1iR+PNMxUv3ngIuhX7j52bVgXGH5ekPhRqFjJ4MWmhIDLFFgKAn71nsnHfLq/6YSGNeBqDy/vyhIo/RmtxaVAegtxZoZ+Zr++7ZM4sBLrA9VbJ3KVfEdyvCGFL7ZJDxgcIOoexkf3BW4iQSgIE5WlJADh7bsXgIOlJ9N+GDSFG86OjZuiaDjrzbe9eQZlyDODAcEanDLnP68+3WOE7M+zuOFrt53uCb2M7f+YkcCxOYH4TaAo7d4gSJPCYQNyQz/rzqXO3gXD2l9e+Tx4koXZgss4JABdSAADrkHev2U11Oxayoi5yU7MhgclXTQnj1RdLf2kMRNG227hC0Y07dlbSg==";
+*/
+
