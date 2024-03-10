@@ -25,6 +25,7 @@ sequenceDiagram
         note right of C: if the key and value do not match, do nothing
         C-->>B: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
         B->>B: check SOCKS5_CHECK_MESSAGE
+        C->>C: if decrypt_serverkey_flag is 1(on), decrypt encrypted privatekey and certificate (Socks5 over TLS) using AES key received from my client
         note left of C: TLS (Socks5 over TLS) nested inside of TLS (HTTPS)
         B->>+C: SSL connect (Socks5 over TLS)
         C->>C: if socks5_over_tls_client_certificate_authentication_flag is 1(on), do client certificate authentication
@@ -77,6 +78,7 @@ sequenceDiagram
         note right of C: if the key and value do not match, do nothing
         C-->>B: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
         B->>B: check SOCKS5_CHECK_MESSAGE
+        C->>C: if decrypt_serverkey_flag is 1(on), decrypt encrypted privatekey and certificate (Socks5 over TLS) using AES key received from my client
         note left of C: TLS (Socks5 over TLS) nested inside of TLS (HTTPS)
         B->>+C: SSL connect (Socks5 over TLS)
         C->>C: if socks5_over_tls_client_certificate_authentication_flag is 1(on), do client certificate authentication
@@ -150,6 +152,7 @@ sequenceDiagram
         D-->>C: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
         C-->>B: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
         B->>B: check SOCKS5_CHECK_MESSAGE
+        D->>D: if decrypt_serverkey_flag is 1(on), decrypt encrypted privatekey and certificate (Socks5 over TLS) using AES key received from my client
         note over C: TLS (Socks5 over TLS) nested inside of TLS (HTTPS)
         B->>+C: SSL connect (Socks5 over TLS)
         C->>+D: SSL connect (Socks5 over TLS)
@@ -226,6 +229,7 @@ sequenceDiagram
         D-->>C: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
         C-->>B: send SOCKS5_CHECK_MESSAGE (encrypt with TLS)
         B->>B: check SOCKS5_CHECK_MESSAGE
+        D->>D: if decrypt_serverkey_flag is 1(on), decrypt encrypted privatekey and certificate (Socks5 over TLS) using AES key received from my client
         note over C: TLS (Socks5 over TLS) nested inside of TLS (HTTPS)
         B->>+C: SSL connect (Socks5 over TLS)
         C->>+D: SSL connect (Socks5 over TLS)
