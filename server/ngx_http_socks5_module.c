@@ -843,7 +843,7 @@ static int do_socks5_handshake_tor_client(ngx_http_request_t *r, int tor_sock, c
 
 
 	// socks selection_request
-	selection_request = (struct selection_request *)calloc(sizeof(struct selection_request), sizeof(unsigned char));
+	selection_request = (struct selection_request *)calloc(1, sizeof(struct selection_request));
 	selection_request->ver = 0x5;
 	selection_request->nmethods = 0x1;
 	selection_request->methods[0] = 0x0;	// no authentication required
@@ -883,7 +883,7 @@ static int do_socks5_handshake_tor_client(ngx_http_request_t *r, int tor_sock, c
 
 	// socks socks_request
 	if(tor_dst_atyp == 0x1){	// IPv4
-		socks_request_ipv4 = (struct socks_request_ipv4 *)calloc(sizeof(struct socks_request_ipv4), sizeof(unsigned char));
+		socks_request_ipv4 = (struct socks_request_ipv4 *)calloc(1, sizeof(struct socks_request_ipv4));
 		socks_request_ipv4->ver = 0x5;
 		socks_request_ipv4->cmd = 0x1;	// CONNECT
 		socks_request_ipv4->atyp = tor_dst_atyp;
@@ -898,7 +898,7 @@ static int do_socks5_handshake_tor_client(ngx_http_request_t *r, int tor_sock, c
 			goto error;
 		}
 	}else if(tor_dst_atyp == 0x3){	// domain name
-		socks_request_domainname = (struct socks_request_domainname *)calloc(sizeof(struct socks_request_domainname), sizeof(unsigned char));
+		socks_request_domainname = (struct socks_request_domainname *)calloc(1, sizeof(struct socks_request_domainname));
 		socks_request_domainname->ver = 0x5;
 		socks_request_domainname->cmd = 0x1;	// CONNECT
 		socks_request_domainname->atyp = tor_dst_atyp;
@@ -914,7 +914,7 @@ static int do_socks5_handshake_tor_client(ngx_http_request_t *r, int tor_sock, c
 			goto error;
 		}
 	}else if(tor_dst_atyp == 0x4){	// IPv6
-		socks_request_ipv6 = (struct socks_request_ipv6 *)calloc(sizeof(struct socks_request_ipv6), sizeof(unsigned char));
+		socks_request_ipv6 = (struct socks_request_ipv6 *)calloc(1, sizeof(struct socks_request_ipv6));
 		socks_request_ipv6->ver = 0x5;
 		socks_request_ipv6->cmd = 0x1;	// CONNECT
 		socks_request_ipv6->atyp = tor_dst_atyp;
