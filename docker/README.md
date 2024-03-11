@@ -193,6 +193,8 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     4. copy the module library (.so file) to the nginx modules directory
     ```
     cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    chown root:root /usr/share/nginx/modules/ngx_http_socks5_module.so
+    chmod 700 /usr/share/nginx/modules/ngx_http_socks5_module.so
     exit
     ```
     5. restart nginx server

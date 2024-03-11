@@ -26,6 +26,8 @@ make modules
 
 mkdir -p /usr/lib/nginx/modules
 cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+chown root:root /usr/share/nginx/modules/ngx_http_socks5_module.so
+chmod 700 /usr/share/nginx/modules/ngx_http_socks5_module.so
 sh -c 'echo "load_module modules/ngx_http_socks5_module.so;" > /etc/nginx/modules-available/ngx_http_socks5_module.conf'
 ln -s /etc/nginx/modules-available/ngx_http_socks5_module.conf /etc/nginx/modules-enabled/ngx_http_socks5_module.conf
 

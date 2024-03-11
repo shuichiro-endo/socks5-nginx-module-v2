@@ -349,6 +349,8 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     ls -l /usr/share/nginx/modules/
     mkdir -p /usr/lib/nginx/modules
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    sudo chown root:root /usr/share/nginx/modules/ngx_http_socks5_module.so
+    sudo chmod 700 /usr/share/nginx/modules/ngx_http_socks5_module.so
     ```
     7. load the module library
     ```
@@ -447,6 +449,8 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     4. copy the module library (.so file) to the nginx modules directory
     ```
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    sudo chown root:root /usr/share/nginx/modules/ngx_http_socks5_module.so
+    sudo chmod 700 /usr/share/nginx/modules/ngx_http_socks5_module.so
     ```
     5. restart nginx server
     ```
@@ -692,6 +696,8 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     3. copy the module library (.so file) to the nginx modules directory
     ```
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    sudo chown root:root /usr/share/nginx/modules/ngx_http_socks5_module.so
+    sudo chmod 700 /usr/share/nginx/modules/ngx_http_socks5_module.so
     ```
     4. restart nginx server
     ```
@@ -800,6 +806,8 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     3. copy the module library (.so file) to the nginx modules directory
     ```
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    sudo chown root:root /usr/share/nginx/modules/ngx_http_socks5_module.so
+    sudo chmod 700 /usr/share/nginx/modules/ngx_http_socks5_module.so
     ```
     4. restart nginx server
     ```
@@ -834,6 +842,8 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     2. copy the module library (.so file) to the nginx modules directory
     ```
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    sudo chown root:root /usr/share/nginx/modules/ngx_http_socks5_module.so
+    sudo chmod 700 /usr/share/nginx/modules/ngx_http_socks5_module.so
     ```
     3. restart nginx server
     ```
@@ -883,6 +893,8 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     ls -l /usr/share/nginx/modules/
     mkdir -p /usr/lib/nginx/modules
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    sudo chown root:root /usr/share/nginx/modules/ngx_http_socks5_module.so
+    sudo chmod 700 /usr/share/nginx/modules/ngx_http_socks5_module.so
     ```
     6. restart nginx server
     ```
@@ -987,11 +999,7 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     ```
     4. modify ngx_http_socks5_module.c file
     ```
-    ...
-    
     static int decrypt_serverkey_flag = 1;	// 0:off 1:on
-
-    ...
     ```
     5. build my module (dynamic module)
     ```
@@ -1002,6 +1010,8 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     6. copy the module library (.so file) to the nginx modules directory
     ```
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    sudo chown root:root /usr/share/nginx/modules/ngx_http_socks5_module.so
+    sudo chmod 700 /usr/share/nginx/modules/ngx_http_socks5_module.so
     ```
     7. restart nginx server
     ```
@@ -1042,6 +1052,8 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     5. copy the module library (.so file) to the nginx modules directory
     ```
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    sudo chown root:root /usr/share/nginx/modules/ngx_http_socks5_module.so
+    sudo chmod 700 /usr/share/nginx/modules/ngx_http_socks5_module.so
     ```
     6. restart nginx server
     ```
@@ -1108,6 +1120,8 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     4. copy the module library (.so file) to the nginx modules directory
     ```
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    sudo chown root:root /usr/share/nginx/modules/ngx_http_socks5_module.so
+    sudo chmod 700 /usr/share/nginx/modules/ngx_http_socks5_module.so
     ```
     5. restart nginx server
     ```
@@ -1131,6 +1145,8 @@ Note: There are characters that cannot be used in the HTTP Request Header Key or
     3. copy the module library (.so file) to the nginx modules directory
     ```
     sudo cp objs/ngx_http_socks5_module.so /usr/share/nginx/modules/
+    sudo chown root:root /usr/share/nginx/modules/ngx_http_socks5_module.so
+    sudo chmod 700 /usr/share/nginx/modules/ngx_http_socks5_module.so
     ```
     4. restart nginx server
     ```
