@@ -115,7 +115,7 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
     ```
     2. run my client
     ```
-    ./client -h 0.0.0.0 -p 9050 -H localhost -P 443 -A 10
+    ./client -h 0.0.0.0 -p 9050 -H localhost -P 443 -A 10 -C 10
     ```
     3. connect to my client from other clients (browser, proxychains, ...)
     ```
