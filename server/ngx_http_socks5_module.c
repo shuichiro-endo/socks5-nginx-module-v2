@@ -2311,83 +2311,84 @@ static ngx_int_t ngx_http_socks5_header_filter(ngx_http_request_t *r)
 		socks5_flag = 1;
 	}
 
-	h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_TOR_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_TOR_KEY)));
-	if(h != NULL &&  ngx_strcasecmp(h->value.data, (u_char *)HTTP_REQUEST_HEADER_TOR_VALUE_ON) == 0){	// tor connection
-		tor_connection_flag = 1;
-	}
-	
-	h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_TVSEC_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_TVSEC_KEY)));
-	if(h != NULL){
-		tv_sec = atol((char *)h->value.data);
-	}
-	
-	h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_TVUSEC_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_TVUSEC_KEY)));
-	if(h != NULL){
-		tv_usec = atol((char *)h->value.data);
-	}
-	
-	h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY)));
-	if(h != NULL){
-		forwarder_tv_sec = atol((char *)h->value.data);
-	}
-	
-	h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY)));
-	if(h != NULL){
-		forwarder_tv_usec = atol((char *)h->value.data);
-	}
-
-	if(decrypt_serverkey_flag == 1){
-		h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY)));
-		if(h != NULL){	// decrypt serverkey aeskey base64
-			if(strlen((const char *)h->value.data) == 44){
-				memcpy(&decrypt_serverkey_aeskey_b64, (unsigned char *)h->value.data, 44);
-				length = decode_base64(r, (const unsigned char *)decrypt_serverkey_aeskey_b64, 44, (unsigned char *)decrypt_serverkey_aeskey, 44);
-				if(length != 32){
-#ifdef _DEBUG
-					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] decrypt_serverkey_aeskey_b64 decode_base64 error:%d", length);
-#endif
-					return ngx_http_next_header_filter(r);
-				}
-#ifdef _DEBUG
-				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] decrypt_serverkey_aeskey_b64:%s", decrypt_serverkey_aeskey_b64);
-#endif
-			}else{
-#ifdef _DEBUG
-				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] decrypt_serverkey_aeskey_b64 error");
-#endif
-				return ngx_http_next_header_filter(r);
-			}
-		}
-
-		h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY)));
-		if(h != NULL){	// decrypt serverkey aesiv base64
-			if(strlen((const char *)h->value.data) == 24){
-				memcpy(&decrypt_serverkey_aesiv_b64, (unsigned char *)h->value.data, 24);
-				length = decode_base64(r, (const unsigned char *)decrypt_serverkey_aesiv_b64, 24, (unsigned char *)decrypt_serverkey_aesiv, 24);
-				if(length != 16){
-#ifdef _DEBUG
-					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] decrypt_serverkey_aesiv_b64 decode_base64 error:%d", length);
-#endif
-					return ngx_http_next_header_filter(r);
-				}
-#ifdef _DEBUG
-				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] decrypt_serverkey_aesiv_b64:%s", decrypt_serverkey_aesiv_b64);
-#endif
-			}
-		}else{
-#ifdef _DEBUG
-				ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] decrypt_serverkey_aesiv_b64 error");
-#endif
-				return ngx_http_next_header_filter(r);
-		}
-	}
-
-
 	if(socks5_flag == 1){	// socks5
 #ifdef _DEBUG
 		ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] Socks5 start");
 #endif
-		
+
+		// search header
+		h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_TOR_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_TOR_KEY)));
+		if(h != NULL &&  ngx_strcasecmp(h->value.data, (u_char *)HTTP_REQUEST_HEADER_TOR_VALUE_ON) == 0){	// tor connection
+			tor_connection_flag = 1;
+		}
+
+		h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_TVSEC_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_TVSEC_KEY)));
+		if(h != NULL){
+			tv_sec = atol((char *)h->value.data);
+		}
+
+		h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_TVUSEC_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_TVUSEC_KEY)));
+		if(h != NULL){
+			tv_usec = atol((char *)h->value.data);
+		}
+
+		h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_FORWARDER_TVSEC_KEY)));
+		if(h != NULL){
+			forwarder_tv_sec = atol((char *)h->value.data);
+		}
+
+		h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_FORWARDER_TVUSEC_KEY)));
+		if(h != NULL){
+			forwarder_tv_usec = atol((char *)h->value.data);
+		}
+
+		if(decrypt_serverkey_flag == 1){
+			h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESKEY_KEY)));
+			if(h != NULL){	// decrypt serverkey aeskey base64
+				if(strlen((const char *)h->value.data) == 44){
+					memcpy(&decrypt_serverkey_aeskey_b64, (unsigned char *)h->value.data, 44);
+					length = decode_base64(r, (const unsigned char *)decrypt_serverkey_aeskey_b64, 44, (unsigned char *)decrypt_serverkey_aeskey, 44);
+					if(length != 32){
+#ifdef _DEBUG
+						ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] decrypt_serverkey_aeskey_b64 decode_base64 error:%d", length);
+#endif
+						return ngx_http_next_header_filter(r);
+					}
+#ifdef _DEBUG
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] decrypt_serverkey_aeskey_b64:%s", decrypt_serverkey_aeskey_b64);
+#endif
+				}else{
+#ifdef _DEBUG
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] decrypt_serverkey_aeskey_b64 error");
+#endif
+					return ngx_http_next_header_filter(r);
+				}
+			}
+
+			h = search_headers_in(r, (u_char *)HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY, (size_t)(strlen(HTTP_REQUEST_HEADER_DECRYPT_SERVERKEY_AESIV_KEY)));
+			if(h != NULL){	// decrypt serverkey aesiv base64
+				if(strlen((const char *)h->value.data) == 24){
+					memcpy(&decrypt_serverkey_aesiv_b64, (unsigned char *)h->value.data, 24);
+					length = decode_base64(r, (const unsigned char *)decrypt_serverkey_aesiv_b64, 24, (unsigned char *)decrypt_serverkey_aesiv, 24);
+					if(length != 16){
+#ifdef _DEBUG
+						ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] decrypt_serverkey_aesiv_b64 decode_base64 error:%d", length);
+#endif
+						return ngx_http_next_header_filter(r);
+					}
+#ifdef _DEBUG
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] decrypt_serverkey_aesiv_b64:%s", decrypt_serverkey_aesiv_b64);
+#endif
+				}
+			}else{
+#ifdef _DEBUG
+					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[E] decrypt_serverkey_aesiv_b64 error");
+#endif
+					return ngx_http_next_header_filter(r);
+			}
+		}
+
+
 		if(tv_sec < 0 || tv_sec > 60 || tv_usec < 0 || tv_usec > 1000000){
 			tv_sec = 3;
 			tv_usec = 0;
