@@ -1083,7 +1083,7 @@ static int worker(ngx_http_request_t *r, void *ptr)
 	struct selection_request *selection_request = (struct selection_request *)buffer;
 	unsigned char method = 0xFF;
 	for(int i=0; i<selection_request->nmethods; i++){
-		if(selection_request->methods[i] == 0x0 || selection_request->methods[i] == 0x2){	// no authentication required or username/password
+		if(selection_request->methods[i] == authentication_method){	// no authentication required or username/password
 			method = selection_request->methods[i];
 			break;
 		}
