@@ -2645,6 +2645,11 @@ static int forwarder_bio_send_data(void *ptr)
 #endif
 					goto error;
 				}
+			}else if(rec == 0){
+#ifdef _DEBUG
+				printf("[I] forwarder_bio_send_data client_sock close\n");
+#endif
+				break;
 			}
 		}
 	}
