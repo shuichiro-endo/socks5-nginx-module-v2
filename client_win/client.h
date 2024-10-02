@@ -18,6 +18,14 @@ struct worker_param {
 	long forwarder_tv_usec;
 };
 
+struct forwarder_bio_param {
+	SOCKET client_sock;
+	SOCKET target_sock;
+	BIO *target_bio;
+	long tv_sec;
+	long tv_usec;
+};
+
 struct ssl_param {
 	SSL_CTX *target_ctx_http;
 	SSL *target_ssl_http;

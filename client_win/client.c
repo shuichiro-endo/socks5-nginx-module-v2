@@ -139,6 +139,10 @@ static int recv_data(SOCKET sock, void *buffer, int length, long tv_sec, long tv
 static int recv_data_bio(SOCKET sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec);
 static int send_data(SOCKET sock, void *buffer, int length, long tv_sec, long tv_usec);
 static int send_data_bio(SOCKET sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec);
+static int forwarder_bio_send_data(void *ptr);
+static int forwarder_bio_recv_data(void *ptr);
+static void forwarder_bio_send_data_thread(void *ptr);
+static void forwarder_bio_recv_data_thread(void *ptr);
 static int forwarder_bio(SOCKET client_sock, SOCKET target_sock, BIO *target_bio, long tv_sec, long tv_usec);
 static int ssl_connect_non_blocking(SOCKET sock, SSL *ssl, long tv_sec, long tv_usec);
 static int bio_do_handshake_non_blocking(SOCKET sock, BIO *bio, long tv_sec, long tv_usec);
@@ -2538,8 +2542,14 @@ static int send_data_bio(SOCKET sock, BIO *bio, void *buffer, int length, long t
 }
 
 
-static int forwarder_bio(SOCKET client_sock, SOCKET target_sock, BIO *target_bio, long tv_sec, long tv_usec)
+static int forwarder_bio_send_data(void *ptr)
 {
+	struct forwarder_bio_param *forwarder_bio_param = (struct forwarder_bio_param *)ptr;
+	SOCKET client_sock = forwarder_bio_param->client_sock;
+	SOCKET target_sock = forwarder_bio_param->target_sock;
+	BIO *target_bio = forwarder_bio_param->target_bio;
+	long tv_sec = forwarder_bio_param->tv_sec;
+	long tv_usec = forwarder_bio_param->tv_usec;
 	int rec,sen;
 	int len = 0;
 	int send_length = 0;
@@ -2547,21 +2557,53 @@ static int forwarder_bio(SOCKET client_sock, SOCKET target_sock, BIO *target_bio
 	timeval tv;
 	char *buffer = (char *)calloc(BUFFER_SIZE*2, sizeof(char));
 	int err = 0;
-	
-	while(1){
-		FD_ZERO(&readfds);
-		FD_SET(client_sock, &readfds);
-		FD_SET(target_sock, &readfds);
-		tv.tv_sec = tv_sec;
-		tv.tv_usec = tv_usec;
-		
-		if(select(NULL, &readfds, NULL, NULL, &tv) == 0){
+	int ret = 0;
+	timeval start;
+	timeval end;
+	long t = 0;
+
+	if(gettimeofday(&start, NULL) == -1){
 #ifdef _DEBUG
-			printf("[I] forwarder_bio select timeout\n");
+		printf("[E] gettimeofday error\n");
+#endif
+		goto error;
+	}
+
+	while(1){
+		if(gettimeofday(&end, NULL) == -1){
+#ifdef _DEBUG
+			printf("[E] gettimeofday error\n");
+#endif
+			goto error;
+		}
+
+		t = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_usec - start.tv_usec);	// microsecond
+		if(t >= (tv_sec * 1000000 + tv_usec)){
+#ifdef _DEBUG
+			printf("[I] forwarder_bio_send_data timeout\n");
 #endif
 			break;
 		}
-		
+
+		FD_ZERO(&readfds);
+		FD_SET(client_sock, &readfds);
+		tv.tv_sec = tv_sec;
+		tv.tv_usec = tv_usec;
+
+		ret = select(NULL, &readfds, NULL, NULL, &tv);
+		if(ret == 0){
+#ifdef _DEBUG
+			printf("[I] forwarder_bio_send_data select timeout\n");
+#endif
+			break;
+		}else if(ret == SOCKET_ERROR){
+			err = WSAGetLastError();
+#ifdef _DEBUG
+			printf("[I] forwarder_bio_send_data select error:0x%x\n", err);
+#endif
+			break;
+		}
+
 		if(FD_ISSET(client_sock, &readfds)){
 			ZeroMemory(buffer, BUFFER_SIZE*2);
 
@@ -2573,11 +2615,11 @@ static int forwarder_bio(SOCKET client_sock, SOCKET target_sock, BIO *target_bio
 					continue;
 				}else{
 #ifdef _DEBUG
-					printf("[I] forwarder_bio recv error:%d\n", err);
+					printf("[I] forwarder_bio_send_data recv error:%d\n", err);
 #endif
 					goto error;
 				}
-			}else{
+			}else if(rec > 0){
 				len = rec;
 				send_length = 0;
 
@@ -2588,7 +2630,7 @@ static int forwarder_bio(SOCKET client_sock, SOCKET target_sock, BIO *target_bio
 							continue;
 						}else{
 #ifdef _DEBUG
-							printf("[I] forwarder_bio BIO_write error:%d\n", sen);
+							printf("[I] forwarder_bio_send_data BIO_write error:%d\n", sen);
 #endif
 							goto error;
 						}
@@ -2596,9 +2638,88 @@ static int forwarder_bio(SOCKET client_sock, SOCKET target_sock, BIO *target_bio
 					send_length += sen;
 					len -= sen;
 				}
+
+				if(gettimeofday(&start, NULL) == -1){
+#ifdef _DEBUG
+					printf("[E] gettimeofday error\n");
+#endif
+					goto error;
+				}
 			}
 		}
-		
+	}
+
+	free(buffer);
+	return 0;
+
+error:
+	free(buffer);
+	return -1;
+}
+
+
+static int forwarder_bio_recv_data(void *ptr)
+{
+	struct forwarder_bio_param *forwarder_bio_param = (struct forwarder_bio_param *)ptr;
+	SOCKET client_sock = forwarder_bio_param->client_sock;
+	SOCKET target_sock = forwarder_bio_param->target_sock;
+	BIO *target_bio = forwarder_bio_param->target_bio;
+	long tv_sec = forwarder_bio_param->tv_sec;
+	long tv_usec = forwarder_bio_param->tv_usec;
+	int rec,sen;
+	int len = 0;
+	int send_length = 0;
+	fd_set readfds;
+	timeval tv;
+	char *buffer = (char *)calloc(BUFFER_SIZE*2, sizeof(char));
+	int err = 0;
+	int ret = 0;
+	timeval start;
+	timeval end;
+	long t = 0;
+
+	if(gettimeofday(&start, NULL) == -1){
+#ifdef _DEBUG
+		printf("[E] gettimeofday error\n");
+#endif
+		goto error;
+	}
+
+	while(1){
+		if(gettimeofday(&end, NULL) == -1){
+#ifdef _DEBUG
+			printf("[E] gettimeofday error\n");
+#endif
+			goto error;
+		}
+
+		t = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_usec - start.tv_usec);	// microsecond
+		if(t >= (tv_sec * 1000000 + tv_usec)){
+#ifdef _DEBUG
+			printf("[I] forwarder_bio_recv_data timeout\n");
+#endif
+			break;
+		}
+
+		FD_ZERO(&readfds);
+		FD_SET(target_sock, &readfds);
+		tv.tv_sec = tv_sec;
+		tv.tv_usec = tv_usec;
+
+		ret = select(NULL, &readfds, NULL, NULL, &tv);
+		if(ret == 0){
+#ifdef _DEBUG
+			printf("[I] forwarder_bio_recv_data select timeout\n");
+#endif
+			break;
+		}else if(ret == SOCKET_ERROR){
+			err = WSAGetLastError();
+#ifdef _DEBUG
+			printf("[I] forwarder_bio_recv_data select error:0x%x\n", err);
+#endif
+			break;
+		}
+
 		if(FD_ISSET(target_sock, &readfds)){
 			ZeroMemory(buffer, BUFFER_SIZE*2);
 
@@ -2608,7 +2729,7 @@ static int forwarder_bio(SOCKET client_sock, SOCKET target_sock, BIO *target_bio
 					continue;
 				}else{
 #ifdef _DEBUG
-					printf("[I] forwarder_bio BIO_read error:%d\n", rec);
+					printf("[I] forwarder_bio_recv_data BIO_read error:%d\n", rec);
 #endif
 					goto error;
 				}
@@ -2625,13 +2746,20 @@ static int forwarder_bio(SOCKET client_sock, SOCKET target_sock, BIO *target_bio
 							continue;
 						}else{
 #ifdef _DEBUG
-							printf("[E] forwarder_bio send error:%d\n", err);
+							printf("[E] forwarder_bio_recv_data send error:%d\n", err);
 #endif
 							goto error;
 						}
 					}
 					send_length += sen;
 					len -= sen;
+				}
+
+				if(gettimeofday(&start, NULL) == -1){
+#ifdef _DEBUG
+					printf("[E] gettimeofday error\n");
+#endif
+					goto error;
 				}
 			}
 		}
@@ -2643,6 +2771,46 @@ static int forwarder_bio(SOCKET client_sock, SOCKET target_sock, BIO *target_bio
 error:
 	free(buffer);
 	return -1;
+}
+
+
+static void forwarder_bio_send_data_thread(void *ptr)
+{
+	int err = 0;
+
+	err = forwarder_bio_send_data(ptr);
+
+	_endthread();
+}
+
+
+static void forwarder_bio_recv_data_thread(void *ptr)
+{
+	int err = 0;
+
+	err = forwarder_bio_recv_data(ptr);
+
+	_endthread();
+}
+
+
+static int forwarder_bio(SOCKET client_sock, SOCKET target_sock, BIO *target_bio, long tv_sec, long tv_usec)
+{
+	forwarder_bio_param forwarder_bio_param;
+	forwarder_bio_param.client_sock = client_sock;
+	forwarder_bio_param.target_sock = target_sock;
+	forwarder_bio_param.target_bio = target_bio;
+	forwarder_bio_param.tv_sec = tv_sec;
+	forwarder_bio_param.tv_usec = tv_usec;
+	HANDLE handle[2];
+
+
+	handle[0] = (HANDLE)_beginthread(forwarder_bio_send_data_thread, 0, &forwarder_bio_param);
+	handle[1] = (HANDLE)_beginthread(forwarder_bio_recv_data_thread, 0, &forwarder_bio_param);
+
+	WaitForMultipleObjects(2, (const HANDLE *)handle, TRUE, INFINITE);
+
+	return 0;
 }
 
 

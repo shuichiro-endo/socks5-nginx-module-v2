@@ -15,6 +15,15 @@ struct worker_param {
 	long forwarder_tv_usec;
 };
 
+struct forwarder_bio_param {
+	ngx_http_request_t *r;
+	int client_sock;
+	BIO *client_bio;
+	int target_sock;
+	long tv_sec;
+	long tv_usec;
+};
+
 struct ssl_param {
 	BIO *client_bio_http;
 	SSL_CTX *client_ctx_socks5;

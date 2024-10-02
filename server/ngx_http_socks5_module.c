@@ -118,6 +118,8 @@ static int recv_data(ngx_http_request_t *r, int sock, void *buffer, int length, 
 static int recv_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec);
 static int send_data(ngx_http_request_t *r, int sock, void *buffer, int length, long tv_sec, long tv_usec);
 static int send_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec);
+static int forwarder_bio_send_data(void *ptr);
+static int forwarder_bio_recv_data(void *ptr);
 static int forwarder_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, int target_sock, long tv_sec, long tv_usec);
 static int send_socks_response_ipv4_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char rep, char rsv, char atyp, long tv_sec, long tv_usec);
 static int send_socks_response_ipv6_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, char ver, char rep, char rsv, char atyp, long tv_sec, long tv_usec);
@@ -678,8 +680,15 @@ static int send_data_bio(ngx_http_request_t *r, int sock, BIO *bio, void *buffer
 }
 
 
-static int forwarder_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, int target_sock, long tv_sec, long tv_usec)
+static int forwarder_bio_send_data(void *ptr)
 {
+	struct forwarder_bio_param *forwarder_bio_param = (struct forwarder_bio_param *)ptr;
+//	ngx_http_request_t *r = forwarder_bio_param->r;
+	int client_sock = forwarder_bio_param->client_sock;
+	BIO *client_bio = forwarder_bio_param->client_bio;
+	int target_sock = forwarder_bio_param->target_sock;
+	long tv_sec = forwarder_bio_param->tv_sec;
+	long tv_usec = forwarder_bio_param->tv_usec;
 	int rec,sen;
 	int len = 0;
 	int send_length = 0;
@@ -692,14 +701,13 @@ static int forwarder_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio
 	while(1){
 		FD_ZERO(&readfds);
 		FD_SET(client_sock, &readfds);
-		FD_SET(target_sock, &readfds);
-		nfds = (client_sock > target_sock ? client_sock : target_sock) + 1;
+		nfds = client_sock + 1;
 		tv.tv_sec = tv_sec;
 		tv.tv_usec = tv_usec;
 
 		if(select(nfds, &readfds, NULL, NULL, &tv) == 0){
 #ifdef _DEBUG
-			ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] forwarder_bio select timeout");
+			ngx_log_error(NGX_LOG_DEBUG, forwarder_bio_param->r->connection->log, 0, "[I] forwarder_bio_send_data select timeout");
 #endif
 			goto error;
 		}
@@ -713,7 +721,7 @@ static int forwarder_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio
 					continue;
 				}else{
 #ifdef _DEBUG
-					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] forwarder_bio BIO_read error:%d", rec);
+					ngx_log_error(NGX_LOG_DEBUG, forwarder_bio_param->r->connection->log, 0, "[I] forwarder_bio_send_data BIO_read error:%d", rec);
 #endif
 					goto error;
 				}
@@ -731,45 +739,7 @@ static int forwarder_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio
 							continue;
 						}else{
 #ifdef _DEBUG
-							ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] forwarder_bio send error:%d", errno);
-#endif
-							goto error;
-						}
-					}
-					send_length += sen;
-					len -= sen;
-				}
-			}
-		}
-
-		if(FD_ISSET(target_sock, &readfds)){
-			bzero(buffer, BUFFER_SIZE*2);
-
-			rec = recv(target_sock, buffer, BUFFER_SIZE, 0);
-			if(rec <= 0){
-				if(errno == EINTR){
-					continue;
-				}else if(errno == EAGAIN){
-					usleep(5000);
-					continue;
-				}else{
-#ifdef _DEBUG
-					ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] forwarder_bio recv error:%d", errno);
-#endif
-					goto error;
-				}
-			}else{
-				len = rec;
-				send_length = 0;
-
-				while(len > 0){
-					sen = BIO_write(client_bio, (unsigned char *)buffer+send_length, len);
-					if(sen <= 0){
-						if(BIO_should_retry(client_bio)){
-							continue;
-						}else{
-#ifdef _DEBUG
-							ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "[I] forwarder_bio BIO_write error:%d", sen);
+							ngx_log_error(NGX_LOG_DEBUG, forwarder_bio_param->r->connection->log, 0, "[I] forwarder_bio_send_data send error:%d", errno);
 #endif
 							goto error;
 						}
@@ -787,6 +757,107 @@ static int forwarder_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio
 error:
 	free(buffer);
 	return -1;
+}
+
+
+static int forwarder_bio_recv_data(void *ptr)
+{
+	struct forwarder_bio_param *forwarder_bio_param = (struct forwarder_bio_param *)ptr;
+//	ngx_http_request_t *r = forwarder_bio_param->r;
+	BIO *client_bio = forwarder_bio_param->client_bio;
+	int target_sock = forwarder_bio_param->target_sock;
+	long tv_sec = forwarder_bio_param->tv_sec;
+	long tv_usec = forwarder_bio_param->tv_usec;
+	int rec,sen;
+	int len = 0;
+	int send_length = 0;
+	fd_set readfds;
+	int nfds = -1;
+	struct timeval tv;
+	unsigned char *buffer = calloc(BUFFER_SIZE*2, sizeof(unsigned char));
+
+
+	while(1){
+		FD_ZERO(&readfds);
+		FD_SET(target_sock, &readfds);
+		nfds = target_sock + 1;
+		tv.tv_sec = tv_sec;
+		tv.tv_usec = tv_usec;
+
+		if(select(nfds, &readfds, NULL, NULL, &tv) == 0){
+#ifdef _DEBUG
+			ngx_log_error(NGX_LOG_DEBUG, forwarder_bio_param->r->connection->log, 0, "[I] forwarder_bio_recv_data select timeout");
+#endif
+			goto error;
+		}
+
+		if(FD_ISSET(target_sock, &readfds)){
+			bzero(buffer, BUFFER_SIZE*2);
+
+			rec = recv(target_sock, buffer, BUFFER_SIZE, 0);
+			if(rec <= 0){
+				if(errno == EINTR){
+					continue;
+				}else if(errno == EAGAIN){
+					usleep(5000);
+					continue;
+				}else{
+#ifdef _DEBUG
+					ngx_log_error(NGX_LOG_DEBUG, forwarder_bio_param->r->connection->log, 0, "[I] forwarder_bio_recv_data recv error:%d", errno);
+#endif
+					goto error;
+				}
+			}else{
+				len = rec;
+				send_length = 0;
+
+				while(len > 0){
+					sen = BIO_write(client_bio, (unsigned char *)buffer+send_length, len);
+					if(sen <= 0){
+						if(BIO_should_retry(client_bio)){
+							continue;
+						}else{
+#ifdef _DEBUG
+							ngx_log_error(NGX_LOG_DEBUG, forwarder_bio_param->r->connection->log, 0, "[I] forwarder_bio_recv_data BIO_write error:%d", sen);
+#endif
+							goto error;
+						}
+					}
+					send_length += sen;
+					len -= sen;
+				}
+			}
+		}
+	}
+
+	free(buffer);
+	return 0;
+
+error:
+	free(buffer);
+	return -1;
+}
+
+
+static int forwarder_bio(ngx_http_request_t *r, int client_sock, BIO *client_bio, int target_sock, long tv_sec, long tv_usec)
+{
+	pthread_t thread1, thread2;
+	struct forwarder_bio_param forwarder_bio_param;
+	forwarder_bio_param.r = r;
+	forwarder_bio_param.client_sock = client_sock;
+	forwarder_bio_param.client_bio = client_bio;
+	forwarder_bio_param.target_sock = target_sock;
+	forwarder_bio_param.tv_sec = tv_sec;
+	forwarder_bio_param.tv_usec = tv_usec;
+
+
+	pthread_create(&thread1, NULL, (void *)forwarder_bio_send_data, &forwarder_bio_param);
+	pthread_create(&thread2, NULL, (void *)forwarder_bio_recv_data, &forwarder_bio_param);
+
+	pthread_join(thread1, NULL);
+	pthread_join(thread2, NULL);
+
+	return 0;
 }
 
 

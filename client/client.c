@@ -134,6 +134,8 @@ static int recv_data(int sock, void *buffer, int length, long tv_sec, long tv_us
 static int recv_data_bio(int sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec);
 static int send_data(int sock, void *buffer, int length, long tv_sec, long tv_usec);
 static int send_data_bio(int sock, BIO *bio, void *buffer, int length, long tv_sec, long tv_usec);
+static int forwarder_bio_send_data(void *ptr);
+static int forwarder_bio_recv_data(void *ptr);
 static int forwarder_bio(int client_sock, int target_sock, BIO *target_bio, long tv_sec, long tv_usec);
 static int ssl_connect_non_blocking(int sock, SSL *ssl, long tv_sec, long tv_usec);
 static int bio_do_handshake_non_blocking(int sock, BIO *bio, long tv_sec, long tv_usec);
@@ -2596,8 +2598,14 @@ static int send_data_bio(int sock, BIO *bio, void *buffer, int length, long tv_s
 }
 
 
-static int forwarder_bio(int client_sock, int target_sock, BIO *target_bio, long tv_sec, long tv_usec)
+static int forwarder_bio_send_data(void *ptr)
 {
+	struct forwarder_bio_param *forwarder_bio_param = (struct forwarder_bio_param *)ptr;
+	int client_sock = forwarder_bio_param->client_sock;
+	int target_sock = forwarder_bio_param->target_sock;
+	BIO *target_bio = forwarder_bio_param->target_bio;
+	long tv_sec = forwarder_bio_param->tv_sec;
+	long tv_usec = forwarder_bio_param->tv_usec;
 	int rec,sen;
 	int len = 0;
 	int send_length = 0;
@@ -2610,14 +2618,13 @@ static int forwarder_bio(int client_sock, int target_sock, BIO *target_bio, long
 	while(1){
 		FD_ZERO(&readfds);
 		FD_SET(client_sock, &readfds);
-		FD_SET(target_sock, &readfds);
-		nfds = (client_sock > target_sock ? client_sock : target_sock) + 1;
+		nfds = client_sock + 1;
 		tv.tv_sec = tv_sec;
 		tv.tv_usec = tv_usec;
 
 		if(select(nfds, &readfds, NULL, NULL, &tv) == 0){
 #ifdef _DEBUG
-			printf("[I] forwarder_bio select timeout\n");
+			printf("[I] forwarder_bio_send_data select timeout\n");
 #endif
 			goto error;
 		}
@@ -2634,7 +2641,7 @@ static int forwarder_bio(int client_sock, int target_sock, BIO *target_bio, long
 					continue;
 				}else{
 #ifdef _DEBUG
-					printf("[I] forwarder_bio recv error:%d\n", errno);
+					printf("[I] forwarder_bio_send_data recv error:%d\n", errno);
 #endif
 					goto error;
 				}
@@ -2649,45 +2656,7 @@ static int forwarder_bio(int client_sock, int target_sock, BIO *target_bio, long
 							continue;
 						}else{
 #ifdef _DEBUG
-							printf("[I] forwarder_bio BIO_write error:%d\n", sen);
-#endif
-							goto error;
-						}
-					}
-					send_length += sen;
-					len -= sen;
-				}
-			}
-		}
-
-		if(FD_ISSET(target_sock, &readfds)){
-			bzero(buffer, BUFFER_SIZE*2);
-
-			rec = BIO_read(target_bio, buffer, BUFFER_SIZE);
-			if(rec <= 0){
-				if(BIO_should_retry(target_bio)){
-					continue;
-				}else{
-#ifdef _DEBUG
-					printf("[I] forwarder_bio BIO_read error:%d\n", rec);
-#endif
-					goto error;
-				}
-			}else{
-				len = rec;
-				send_length = 0;
-
-				while(len > 0){
-					sen = send(client_sock, (unsigned char *)buffer+send_length, len, 0);
-					if(sen <= 0){
-						if(errno == EINTR){
-							continue;
-						}else if(errno == EAGAIN){
-							usleep(5000);
-							continue;
-						}else{
-#ifdef _DEBUG
-							printf("[I] forwarder_bio send error:%d\n", errno);
+							printf("[I] forwarder_bio_send_data BIO_write error:%d\n", sen);
 #endif
 							goto error;
 						}
@@ -2705,6 +2674,106 @@ static int forwarder_bio(int client_sock, int target_sock, BIO *target_bio, long
 error:
 	free(buffer);
 	return -1;
+}
+
+
+static int forwarder_bio_recv_data(void *ptr)
+{
+	struct forwarder_bio_param *forwarder_bio_param = (struct forwarder_bio_param *)ptr;
+	int client_sock = forwarder_bio_param->client_sock;
+	int target_sock = forwarder_bio_param->target_sock;
+	BIO *target_bio = forwarder_bio_param->target_bio;
+	long tv_sec = forwarder_bio_param->tv_sec;
+	long tv_usec = forwarder_bio_param->tv_usec;
+	int rec,sen;
+	int len = 0;
+	int send_length = 0;
+	fd_set readfds;
+	int nfds = -1;
+	struct timeval tv;
+	unsigned char *buffer = calloc(BUFFER_SIZE*2, sizeof(unsigned char));
+
+
+	while(1){
+		FD_ZERO(&readfds);
+		FD_SET(target_sock, &readfds);
+		nfds = target_sock + 1;
+		tv.tv_sec = tv_sec;
+		tv.tv_usec = tv_usec;
+
+		if(select(nfds, &readfds, NULL, NULL, &tv) == 0){
+#ifdef _DEBUG
+			printf("[I] forwarder_bio_recv_data select timeout\n");
+#endif
+			goto error;
+		}
+
+		if(FD_ISSET(target_sock, &readfds)){
+			bzero(buffer, BUFFER_SIZE*2);
+
+			rec = BIO_read(target_bio, buffer, BUFFER_SIZE);
+			if(rec <= 0){
+				if(BIO_should_retry(target_bio)){
+					continue;
+				}else{
+#ifdef _DEBUG
+					printf("[I] forwarder_bio_recv_data BIO_read error:%d\n", rec);
+#endif
+					goto error;
+				}
+			}else{
+				len = rec;
+				send_length = 0;
+
+				while(len > 0){
+					sen = send(client_sock, (unsigned char *)buffer+send_length, len, 0);
+					if(sen <= 0){
+						if(errno == EINTR){
+							continue;
+						}else if(errno == EAGAIN){
+							usleep(5000);
+							continue;
+						}else{
+#ifdef _DEBUG
+							printf("[I] forwarder_bio_recv_data send error:%d\n", errno);
+#endif
+							goto error;
+						}
+					}
+					send_length += sen;
+					len -= sen;
+				}
+			}
+		}
+	}
+
+	free(buffer);
+	return 0;
+
+error:
+	free(buffer);
+	return -1;
+}
+
+
+static int forwarder_bio(int client_sock, int target_sock, BIO *target_bio, long tv_sec, long tv_usec)
+{
+	pthread_t thread1, thread2;
+	struct forwarder_bio_param forwarder_bio_param;
+	forwarder_bio_param.client_sock = client_sock;
+	forwarder_bio_param.target_sock = target_sock;
+	forwarder_bio_param.target_bio = target_bio;
+	forwarder_bio_param.tv_sec = tv_sec;
+	forwarder_bio_param.tv_usec = tv_usec;
+
+
+	pthread_create(&thread1, NULL, (void *)forwarder_bio_send_data, &forwarder_bio_param);
+	pthread_create(&thread2, NULL, (void *)forwarder_bio_recv_data, &forwarder_bio_param);
+
+	pthread_join(thread1, NULL);
+	pthread_join(thread2, NULL);
+
+	return 0;
 }
 
 
