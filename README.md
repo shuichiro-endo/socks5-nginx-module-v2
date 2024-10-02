@@ -300,7 +300,7 @@ sequenceDiagram
     - openssl and libssl-dev
     - tor (optional)
     ```
-    sudo apt install gcc make nginx libpcre3 libpcre3-dev zlib1g zlib1g-dev openssl libssl-dev
+    sudo apt install gcc make nginx libpcre2-dev zlib1g zlib1g-dev openssl libssl-dev
     sudo apt install tor
     ```
 

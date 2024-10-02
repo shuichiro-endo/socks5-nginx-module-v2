@@ -14,8 +14,7 @@ RUN apt-get update \
         gcc \
         make \
         nginx \
-        libpcre3 \
-        libpcre3-dev \
+        libpcre2-dev \
         zlib1g \
         zlib1g-dev \
         openssl \

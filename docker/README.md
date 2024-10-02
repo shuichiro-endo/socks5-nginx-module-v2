@@ -35,8 +35,7 @@ git clone https://github.com/shuichiro-endo/socks5-nginx-module-v2.git
                 gcc \
                 make \
                 nginx \
-                libpcre3 \
-                libpcre3-dev \
+                libpcre2-dev \
                 zlib1g \
                 zlib1g-dev \
                 openssl \
