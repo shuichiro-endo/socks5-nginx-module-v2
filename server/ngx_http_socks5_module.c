@@ -716,7 +716,7 @@ static int forwarder_bio_send_data(void *ptr)
 			bzero(buffer, BUFFER_SIZE*2);
 
 			rec = BIO_read(client_bio, buffer, BUFFER_SIZE);
-			if(rec <= 0){
+			if(rec < 0){
 				if(BIO_should_retry(client_bio)){
 					continue;
 				}else{
@@ -725,7 +725,7 @@ static int forwarder_bio_send_data(void *ptr)
 #endif
 					goto error;
 				}
-			}else{
+			}else if(rec > 0){
 				len = rec;
 				send_length = 0;
 
@@ -747,6 +747,11 @@ static int forwarder_bio_send_data(void *ptr)
 					send_length += sen;
 					len -= sen;
 				}
+			}else{
+#ifdef _DEBUG
+				ngx_log_error(NGX_LOG_DEBUG, forwarder_bio_param->r->connection->log, 0, "[I] forwarder_bio_send_data client close");
+#endif
+				break;
 			}
 		}
 	}
@@ -795,7 +800,7 @@ static int forwarder_bio_recv_data(void *ptr)
 			bzero(buffer, BUFFER_SIZE*2);
 
 			rec = recv(target_sock, buffer, BUFFER_SIZE, 0);
-			if(rec <= 0){
+			if(rec < 0){
 				if(errno == EINTR){
 					continue;
 				}else if(errno == EAGAIN){
@@ -807,7 +812,7 @@ static int forwarder_bio_recv_data(void *ptr)
 #endif
 					goto error;
 				}
-			}else{
+			}else if(rec > 0){
 				len = rec;
 				send_length = 0;
 
@@ -826,6 +831,11 @@ static int forwarder_bio_recv_data(void *ptr)
 					send_length += sen;
 					len -= sen;
 				}
+			}else{
+#ifdef _DEBUG
+				ngx_log_error(NGX_LOG_DEBUG, forwarder_bio_param->r->connection->log, 0, "[I] forwarder_bio_recv_data target close");
+#endif
+				break;
 			}
 		}
 	}

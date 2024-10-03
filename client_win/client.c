@@ -2647,7 +2647,7 @@ static int forwarder_bio_send_data(void *ptr)
 				}
 			}else if(rec == 0){
 #ifdef _DEBUG
-				printf("[I] forwarder_bio_send_data client_sock close\n");
+				printf("[I] forwarder_bio_send_data client close\n");
 #endif
 				break;
 			}
@@ -2729,7 +2729,7 @@ static int forwarder_bio_recv_data(void *ptr)
 			ZeroMemory(buffer, BUFFER_SIZE*2);
 
 			rec = BIO_read(target_bio, buffer, BUFFER_SIZE);
-			if(rec <= 0){
+			if(rec < 0){
 				if(BIO_should_retry(target_bio)){
 					continue;
 				}else{
@@ -2738,7 +2738,7 @@ static int forwarder_bio_recv_data(void *ptr)
 #endif
 					goto error;
 				}
-			}else{
+			}else if(rec > 0){
 				len = rec;
 				send_length = 0;
 
@@ -2766,6 +2766,11 @@ static int forwarder_bio_recv_data(void *ptr)
 #endif
 					goto error;
 				}
+			}else{
+#ifdef _DEBUG
+				printf("[I] forwarder_bio_recv_data target close\n");
+#endif
+				break;
 			}
 		}
 	}
