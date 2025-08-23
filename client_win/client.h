@@ -36,7 +36,7 @@ struct ssl_param {
 };
 
 struct digest_parameters {
-	char algorithm[10];			// MD5 or MD5-sess or SHA-256 or SHA-256-sess or SHA-512-256 or SHA-512-256-sess
+	char algorithm[20];			// MD5 or MD5-sess or SHA-256 or SHA-256-sess or SHA-512-256 or SHA-512-256-sess
 	char username[256];			// forward proxy username
 	char realm[100];
 	char password[256];			// forward proxy password
